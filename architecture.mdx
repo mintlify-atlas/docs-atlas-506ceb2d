@@ -1,0 +1,750 @@
+---
+title: "Architecture"
+description: "Technical architecture and implementation details of the CONIITI 2026 platform"
+---
+
+# Architecture Overview
+
+CONIITI 2026 is built as a **full-stack SaaS application** using modern web technologies. The platform follows a **client-server architecture** with a React frontend, Express backend, and Supabase for authentication and data storage.
+
+## Technology Stack
+
+<CardGroup cols={2}>
+  <Card
+    title="Frontend"
+    icon="browser"
+  >
+    React 19 + TypeScript + Vite + Tailwind CSS
+  </Card>
+  <Card
+    title="Backend"
+    icon="server"
+  >
+    Express 5 + TypeScript + Node.js
+  </Card>
+  <Card
+    title="Database & Auth"
+    icon="database"
+  >
+    Supabase (PostgreSQL + Auth)
+  </Card>
+  <Card
+    title="Deployment"
+    icon="cloud"
+  >
+    Render (Frontend: Static Site, Backend: Web Service)
+  </Card>
+</CardGroup>
+
+## Frontend Architecture
+
+### Tech Stack Details
+
+The frontend is built with cutting-edge React technologies:
+
+```json
+{
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.13.0",
+    "@supabase/supabase-js": "^2.98.0",
+    "recharts": "^3.7.0",
+    "lucide-react": "^0.577.0",
+    "react-qr-code": "^2.0.18",
+    "@yudiel/react-qr-scanner": "^2.5.1",
+    "sonner": "^2.0.7",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1"
+  }
+}
+```
+
+<Info>
+The frontend uses **Vite** as the build tool, providing lightning-fast hot module replacement (HMR) during development and optimized production builds.
+</Info>
+
+### Project Structure
+
+```
+frontend/vite-project/
+├── src/
+│   ├── components/          # Reusable React components
+│   │   ├── Layout.tsx       # Main layout wrapper
+│   │   ├── CountdownTimer.tsx
+│   │   ├── ConferenceCard.tsx
+│   │   └── DayTabs.tsx
+│   ├── pages/               # Route components
+│   │   ├── Home.tsx
+│   │   ├── Agenda.tsx
+│   │   ├── Invitados.tsx
+│   │   ├── Login.tsx
+│   │   ├── Register.tsx
+│   │   ├── Profile.tsx
+│   │   ├── Admin.tsx
+│   │   └── ResetPassword.tsx
+│   ├── types/               # TypeScript type definitions
+│   │   └── conference.ts
+│   ├── services/            # API integration
+│   │   └── api.ts
+│   ├── utils/               # Utility functions
+│   │   ├── tracker.ts       # Performance tracking
+│   │   └── i18n.ts          # Internationalization
+│   ├── data/                # Mock data
+│   │   └── conference_mocks.ts
+│   ├── styles/              # CSS modules
+│   │   ├── global.css
+│   │   ├── index.css
+│   │   ├── components/
+│   │   └── pages/
+│   ├── App.tsx              # Main app component with routing
+│   └── main.tsx             # Application entry point
+├── public/                  # Static assets
+│   ├── logo-coniiti.png
+│   ├── ucatolica-logo.png
+│   └── banner-header.png
+├── index.html
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+```
+
+### Routing System
+
+The application uses **React Router v7** for client-side routing:
+
+```tsx
+import { Routes, Route } from "react-router-dom"
+
+export default function App() {
+  const location = useLocation();
+
+  return (
+    <>
+      <Toaster position="top-center" richColors />
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/conferencias" element={<Agenda />} />
+          <Route path="/invitados" element={<Invitados />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/registro" element={<Register />} />
+          <Route path="/perfil" element={<Profile />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/actualizar-password" element={<ResetPassword />} />
+        </Routes>
+      </Layout>
+    </>
+  )
+}
+```
+
+### State Management
+
+CONIITI 2026 uses **React Hooks** for state management:
+
+- `useState` for component-level state
+- `useEffect` for side effects and lifecycle
+- `useNavigate` for programmatic navigation
+- **LocalStorage** for persistence and cross-tab synchronization
+
+<Note>
+The platform intentionally avoids heavy state management libraries like Redux to keep the bundle size small and the codebase simple.
+</Note>
+
+### Type Safety
+
+All data structures are strictly typed with TypeScript:
+
+```typescript
+// frontend/vite-project/src/types/conference.ts
+export type Speaker = {
+  name: string
+  bio: string
+  avatar: string
+  organization?: string
+}
+
+export type Conference = {
+  id: string
+  title: string
+  description: string
+  startTime: string
+  endTime: string
+  location: string
+  speaker: Speaker
+  category?: string
+  level?: string
+  career?: string
+  type?: 'presencial' | 'virtual'
+  virtualLink?: string
+  dayId?: string
+  documentUrl?: string
+  documentFile?: string
+  attended?: boolean
+}
+```
+
+### Styling Approach
+
+The frontend uses a **hybrid CSS approach**:
+
+1. **Tailwind CSS 4** for utility-first styling
+2. **Custom CSS modules** for page-specific and component styles
+3. **CSS variables** for dynamic theming
+
+```css
+/* Dynamic theming with CSS variables */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #1b1a1a;
+  --header-bg: #1f2a44;
+  --primary-color: #2563EB;
+  --secondary-color: #1E293B;
+}
+```
+
+### Performance Tracking
+
+The platform includes a custom performance monitoring system:
+
+```typescript
+// frontend/vite-project/src/utils/tracker.ts
+useEffect(() => {
+  const navStart = performance.now();
+  trackEvent('PAGE_VIEW', location.pathname);
+
+  const timer = setTimeout(() => {
+    const loadTime = Math.round(performance.now() - navStart);
+    trackEvent('PAGE_LOAD_TIME', location.pathname, 'Carga de ruta', loadTime);
+  }, 100);
+
+  const observer = new PerformanceObserver((list) => {
+    list.getEntries().forEach((entry: any) => {
+      if (entry.entryType === 'resource') {
+        const isImg = ['img', 'image'].includes(entry.initiatorType);
+        if (isImg) {
+          trackEvent('IMAGE_LOAD', location.pathname, entry.name, 
+                     Math.round(entry.duration), entry.transferSize);
+        }
+      }
+    });
+  });
+
+  observer.observe({ type: 'resource', buffered: true });
+}, [location.pathname]);
+```
+
+## Backend Architecture
+
+### Tech Stack Details
+
+The backend is built with **Express 5** and **TypeScript**:
+
+```json
+{
+  "dependencies": {
+    "express": "^5.2.1",
+    "@supabase/supabase-js": "^2.97.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3",
+    "nodemon": "^3.1.13",
+    "ts-node-dev": "^2.0.0"
+  }
+}
+```
+
+### Modular Architecture
+
+The backend follows a **modular, domain-driven structure**:
+
+```
+backend/
+├── src/
+│   ├── config/                    # Configuration
+│   │   └── supabase.ts            # Supabase client setup
+│   ├── middleware/                # Express middleware
+│   │   └── auth.middleware.ts     # Authentication middleware
+│   ├── modules/                   # Domain modules
+│   │   ├── usuario/               # User management
+│   │   │   ├── usuario.controller.ts
+│   │   │   ├── usuario.routes.ts
+│   │   │   ├── usuario.service.ts
+│   │   │   └── usuario.dto.ts
+│   │   ├── ponencia/              # Conference management
+│   │   │   ├── ponencia.controller.ts
+│   │   │   ├── ponencia.routes.ts
+│   │   │   └── ponencia.service.ts
+│   │   ├── ponente/               # Speaker management
+│   │   │   ├── ponente.controller.ts
+│   │   │   ├── ponente.routes.ts
+│   │   │   └── ponente.service.ts
+│   │   ├── evento/                # Event management
+│   │   │   ├── evento.controller.ts
+│   │   │   ├── evento.routes.ts
+│   │   │   └── evento.service.ts
+│   │   └── inscripcion/           # Enrollment management
+│   │       ├── inscripcion.controller.ts
+│   │       ├── inscripcion.routes.ts
+│   │       └── inscripcion.service.ts
+│   ├── app.ts                     # Express app configuration
+│   └── server.ts                  # Server entry point
+├── package.json
+├── tsconfig.json
+└── db.json
+```
+
+<Tip>
+Each module follows a consistent pattern: **routes → controller → service**, making the codebase easy to navigate and extend.
+</Tip>
+
+### Express Application Setup
+
+```typescript
+// backend/src/app.ts
+import express from 'express'
+import cors from 'cors'
+
+import usuarioRoutes from './modules/usuario/usuario.routes'
+import eventoRoutes from './modules/evento/evento.routes'
+import ponencias from './modules/ponencia/ponencia.routes'
+import inscripciones from './modules/inscripcion/inscripcion.routes'
+import ponentes from './modules/ponente/ponente.routes'
+
+const app = express()
+
+app.use(cors())
+app.use(express.json())
+
+app.use('/api/usuarios', usuarioRoutes)
+app.use('/api/eventos', eventoRoutes)
+app.use('/api/ponencias', ponencias)
+app.use('/api/inscripciones', inscripciones)
+app.use('/api/ponentes', ponentes)
+
+export default app
+```
+
+### Server Entry Point
+
+```typescript
+// backend/src/server.ts
+import 'dotenv/config'
+import app from './app'
+
+const PORT = process.env.PORT || 3000
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en: http://localhost:${PORT}`)
+})
+```
+
+### API Routes
+
+The backend exposes RESTful API endpoints:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/ponencias` | GET | Retrieve all conferences |
+| `/api/ponencias` | POST | Create a new conference |
+| `/api/ponencias/:id` | PUT | Update a conference |
+| `/api/ponencias/:id` | DELETE | Delete a conference |
+| `/api/ponentes` | GET | Retrieve all speakers |
+| `/api/ponentes` | POST | Create a new speaker |
+| `/api/eventos` | GET | Retrieve all events |
+| `/api/usuarios` | GET | Retrieve all users |
+| `/api/usuarios/perfil` | POST | Create user profile |
+| `/api/usuarios/perfil` | PUT | Update user profile |
+| `/api/inscripciones` | GET | Retrieve enrollments |
+| `/api/inscripciones` | POST | Create enrollment |
+
+### Data Transformation
+
+The API layer transforms database models to frontend-friendly formats:
+
+```typescript
+// frontend/vite-project/src/services/api.ts
+const mapPonencia = (p: any) => ({
+  id: String(p.id),
+  title: p.titulo,
+  description: p.descripcion,
+  startTime: p.hora_inicio || '09:00',
+  endTime: p.hora_fin || '10:00',
+  location: p.sala?.nombre || 'Pendiente',
+  category: p.category || 'General',
+  level: p.level || 'Básico',
+  type: p.type || 'presencial',
+  virtualLink: p.virtualLink,
+  dayId: p.dia_evento?.id ? `day${p.dia_evento.id}` : 'day1',
+  speaker: p.ponencia_ponente?.[0]?.ponente ? {
+    name: p.ponencia_ponente[0].ponente.nombre,
+    bio: p.ponencia_ponente[0].ponente.bio,
+    avatar: p.ponencia_ponente[0].ponente.avatar_url || '/default-avatar.png',
+    organization: p.ponencia_ponente[0].ponente.organizacion
+  } : {
+    name: 'Ponente por definir',
+    bio: '',
+    avatar: '/default-avatar.png',
+    organization: ''
+  }
+});
+```
+
+## Database & Authentication
+
+### Supabase Integration
+
+CONIITI 2026 uses **Supabase** for:
+
+1. **PostgreSQL database** for persistent storage
+2. **Authentication** with email/password
+3. **Row-level security** for data access control
+
+<CardGroup cols={2}>
+  <Card title="Client-Side (Frontend)" icon="user">
+    Uses public anon key for user operations
+  </Card>
+  <Card title="Server-Side (Backend)" icon="shield">
+    Uses service role key for privileged operations
+  </Card>
+</CardGroup>
+
+### Backend Supabase Configuration
+
+```typescript
+// backend/src/config/supabase.ts
+import { createClient } from '@supabase/supabase-js'
+
+// Public client (validate tokens)
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+)
+
+// Admin client (for secure operations)
+export const admin_supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+)
+```
+
+### Frontend Supabase Configuration
+
+```typescript
+// frontend/vite-project/src/services/api.ts
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+```
+
+### Authentication Helpers
+
+```typescript
+// Authentication operations
+export const signUp = (email: string, pass: string) => 
+  supabase.auth.signUp({ email, password: pass });
+
+export const signIn = (email: string, pass: string) => 
+  supabase.auth.signInWithPassword({ email, password: pass });
+
+export const signOut = () => supabase.auth.signOut();
+
+export const resetPassword = (email: string) => 
+  supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/actualizar-password`,
+  });
+
+export const updatePassword = (newPassword: string) => 
+  supabase.auth.updateUser({ password: newPassword });
+```
+
+### User Profile Service
+
+```typescript
+// backend/src/modules/usuario/usuario.service.ts
+import { supabase } from '../../config/supabase'
+
+export const crearPerfil = async (id: string, data: any) => {
+  return await supabase.from('perfil_usuario').insert({
+    id,
+    ...data
+  })
+}
+
+export const obtenerMiPerfil = async (id: string) => {
+  return await supabase
+    .from('perfil_usuario')
+    .select('*')
+    .eq('id', id)
+    .single()
+}
+```
+
+## API Communication
+
+### Centralized API Client
+
+All API calls go through a centralized `apiFetch` function that handles authentication:
+
+```typescript
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+  // Get session token
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  // Add auth token if available
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
+  }
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || errorData.message || `Error: ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
+```
+
+### Fallback Strategy
+
+The platform implements a **resilient fallback strategy** to handle API failures gracefully:
+
+```typescript
+const fetchAllData = async () => {
+  setIsLoading(true);
+  let ponenciasData: any[] = [];
+  let ponentesData: any[] = [];
+  let usuariosData: any[] = [];
+
+  try {
+    // Try individual endpoints separately
+    try { ponenciasData = await getPonencias(); } 
+    catch (e) { console.warn("API Ponencias falló"); }
+    
+    try { ponentesData = await getPonentes(); } 
+    catch (e) { console.warn("API Ponentes falló"); }
+    
+    try { usuariosData = await getUsuarios(); } 
+    catch (e) { console.warn("API Usuarios falló"); }
+
+    // Use fallback data if API fails
+    const savedConfs = JSON.parse(localStorage.getItem("site_conferences") || '[]');
+    const finalConfs = ponenciasData.length > 0 ? ponenciasData : 
+                       (savedConfs.length > 0 ? savedConfs : initialConferences);
+    setConferences(finalConfs);
+  } catch (err) {
+    console.error("Error crítico:", err);
+    setConferences(initialConferences); // Ultimate fallback
+  }
+};
+```
+
+<Info>
+This approach ensures the frontend remains functional even if the backend is temporarily unavailable.
+</Info>
+
+## Deployment Architecture
+
+### Render Configuration
+
+Both frontend and backend are deployed on **Render** using the `render.yaml` configuration:
+
+```yaml
+services:
+  # Backend — Express + TypeScript + Node.js
+  - type: web
+    name: coniiti-2026-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 18.20.4
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+
+  # Frontend — React + Vite (Static Site)
+  - type: web
+    name: coniiti-2026-frontend
+    runtime: static
+    plan: free
+    rootDir: frontend/vite-project
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://coniiti-2026-backend.onrender.com/api
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+```
+
+<CardGroup cols={2}>
+  <Card title="Backend Service" icon="server">
+    Node.js web service running on port 10000
+  </Card>
+  <Card title="Frontend Service" icon="window-maximize">
+    Static site with client-side routing via rewrite rules
+  </Card>
+</CardGroup>
+
+### Environment Variables
+
+The platform requires the following environment variables:
+
+**Backend:**
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_ANON_KEY` - Supabase anon/public key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (optional)
+- `PORT` - Server port (default: 3000)
+
+**Frontend:**
+- `VITE_API_URL` - Backend API URL
+- `VITE_SUPABASE_URL` - Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase anon/public key
+
+### Build Process
+
+<Steps>
+  <Step title="Frontend Build">
+    TypeScript compilation → Vite bundling → Static file generation
+  </Step>
+  <Step title="Backend Build">
+    TypeScript compilation → JavaScript output in `dist/` folder
+  </Step>
+  <Step title="Deployment">
+    Render automatically deploys on git push to main branch
+  </Step>
+</Steps>
+
+## Local Development
+
+### Running the Full Stack
+
+The monorepo includes a convenient script to run both services simultaneously:
+
+```json
+{
+  "scripts": {
+    "dev": "npx concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend/vite-project\""
+  }
+}
+```
+
+### Development Servers
+
+- **Frontend**: `http://localhost:5173` (Vite dev server)
+- **Backend**: `http://localhost:3000` (Express server with nodemon)
+
+<Tip>
+The frontend automatically proxies API requests to the backend during development through the `VITE_API_URL` environment variable.
+</Tip>
+
+## Key Architectural Decisions
+
+### Why LocalStorage + API?
+
+The platform uses a **dual-layer persistence strategy**:
+
+1. **LocalStorage** for immediate feedback and offline capability
+2. **API + Database** for cross-device synchronization and data integrity
+
+This ensures a responsive user experience even with slow network connections.
+
+### Why TypeScript?
+
+TypeScript provides:
+- **Type safety** to catch errors at compile-time
+- **Better IDE support** with autocomplete and refactoring
+- **Self-documenting code** through type definitions
+- **Easier refactoring** as the codebase grows
+
+### Why Modular Backend?
+
+The modular architecture enables:
+- **Separation of concerns** (routes, controllers, services)
+- **Easy testing** of individual modules
+- **Scalability** by adding new modules without affecting existing ones
+- **Team collaboration** with clear ownership boundaries
+
+### Why Supabase?
+
+Supabase was chosen for:
+- **Rapid development** with built-in authentication
+- **PostgreSQL** for relational data integrity
+- **Row-level security** for fine-grained access control
+- **Real-time subscriptions** for future enhancements
+- **Free tier** suitable for university projects
+
+## Performance Optimizations
+
+<CardGroup cols={2}>
+  <Card title="Code Splitting" icon="scissors">
+    React Router lazy loading for route-based code splitting
+  </Card>
+  <Card title="Image Optimization" icon="image">
+    Base64 encoding for small images, external hosting for large assets
+  </Card>
+  <Card title="Bundle Size" icon="box">
+    Vite tree-shaking removes unused code
+  </Card>
+  <Card title="Caching" icon="clock">
+    LocalStorage caching reduces API calls
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+- **JWT tokens** from Supabase for stateless authentication
+- **CORS configuration** to prevent unauthorized access
+- **Environment variables** to protect sensitive credentials
+- **Role-based access** enforced at both frontend and backend
+- **Input validation** using Zod schemas on the backend
+
+<Card
+  title="Ready to get started?"
+  icon="rocket"
+  href="/quickstart"
+  horizontal
+>
+  Follow our quickstart guide to set up CONIITI 2026 locally
+</Card>

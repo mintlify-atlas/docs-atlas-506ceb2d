@@ -1,0 +1,259 @@
+---
+title: Profile Management
+description: Learn how to view and update your personal information and account settings
+---
+
+# Profile Management
+
+Your profile page is your central hub for managing personal information, viewing enrolled conferences, and tracking your participation in CONIITI 2026.
+
+## Accessing Your Profile
+
+Navigate to your profile page at `/perfil` or click on the profile link in the navigation menu after logging in.
+
+<Note>
+  You must be logged in to access your profile. If you're not authenticated, you'll be redirected to the login page.
+</Note>
+
+## Profile Overview
+
+Your profile page consists of three main sections:
+
+1. **Personal Data** (Mis Datos Personales)
+2. **Enrolled Conferences** (Mis Conferencias Inscritas)
+3. **Attendance History** (Certificados de Asistencia)
+
+---
+
+## Managing Personal Data
+
+### Viewing Your Information
+
+Your profile displays:
+- **Full Name** (Nombre Completo)
+- **Email Address** (Correo Electrónico) - Cannot be changed
+- **Role** (Rol) - Student, Professor, or Guest
+- **Document Number** (Número de Documento) - For students and professors
+- **Institutional Code** (Código Institucional) - Students only
+- **Career** (Carrera) - Students only
+- **Gender** - Selected during registration
+
+### Editing Your Profile
+
+<Steps>
+  <Step title="Enable Edit Mode">
+    Click the **"Editar Perfil"** (Edit Profile) button in the top-right corner of the Personal Data section.
+  </Step>
+
+  <Step title="Update Editable Fields">
+    You can modify:
+    - **Full Name**: Update your name if needed
+    - **Career** (Students only): Change your academic program
+
+    <Note>
+      Email, role, document number, and institutional code cannot be changed for security and data integrity reasons.
+    </Note>
+  </Step>
+
+  <Step title="Save Changes">
+    Click **"Guardar"** (Save) to save your changes.
+    
+    Your updates are saved both:
+    - Locally in your browser (for offline access)
+    - On the server (when connected)
+
+    <Tip>
+      You'll see a confirmation message once your changes are successfully saved.
+    </Tip>
+  </Step>
+</Steps>
+
+### Available Careers for Students
+
+If you're a student, you can select from these academic programs:
+- Administración de Empresas
+- Arquitectura
+- Derecho
+- Economía
+- Ingeniería Civil
+- Ingeniería de Sistemas
+- Ingeniería Electrónica
+- Ingeniería Industrial
+- Psicología
+
+---
+
+## Password Management
+
+Your profile includes a dedicated security section for changing your password.
+
+<Steps>
+  <Step title="Locate Security Section">
+    Scroll down to the **"🔒 Seguridad - Cambiar Contraseña"** section in your profile.
+  </Step>
+
+  <Step title="Enter New Password">
+    Fill in the following fields:
+    - **Nueva Contraseña** (New Password)
+    - **Confirmar Nueva Contraseña** (Confirm New Password)
+
+    <Note>
+      Password requirements:
+      - Minimum 6 characters
+      - Both password fields must match
+    </Note>
+  </Step>
+
+  <Step title="Update Password">
+    Click **"Actualizar Contraseña"** (Update Password) to save your new password.
+    
+    You'll receive a confirmation message when the password is successfully updated.
+  </Step>
+</Steps>
+
+<Tip>
+  Your password is updated locally and will be used for your next login. Make sure to remember your new password!
+</Tip>
+
+---
+
+## Enrolled Conferences Section
+
+This section displays all conferences you've registered for that haven't been attended yet.
+
+### Conference Card Information
+
+Each conference card shows:
+- 📅 **Conference Title**
+- **Day and Time**: Day number, start time, and end time
+- 📍 **Location**: Physical location or "Plataforma Virtual" for online conferences
+- 🔗 **Virtual Meeting Link**: For virtual conferences, click "Unirse a la Reunión" to join
+
+### Managing Your Enrollments
+
+#### Canceling an Enrollment
+
+<Steps>
+  <Step title="Find the Conference">
+    Locate the conference you want to cancel in the "Mis Conferencias Inscritas" section.
+  </Step>
+
+  <Step title="Click Cancel">
+    Click the **"Cancelar"** button on the conference card.
+  </Step>
+
+  <Step title="Confirm Cancellation">
+    Confirm your decision in the popup dialog.
+    
+    <Note>
+      Canceling your enrollment will:
+      - Remove the conference from your enrolled list
+      - Free up your spot for other attendees
+      - Cannot be easily undone - you'll need to re-enroll if spots are still available
+    </Note>
+  </Step>
+</Steps>
+
+#### Joining Virtual Conferences
+
+For conferences marked as virtual (🌐 Virtual):
+1. Click the **"🔗 Unirse a la Reunión"** (Join Meeting) link
+2. You'll be redirected to the virtual conference platform
+3. Follow the platform's instructions to join
+
+<Tip>
+  Join virtual conferences a few minutes early to ensure your connection is working properly.
+</Tip>
+
+#### No Conferences Yet?
+
+If you see "No tienes conferencias pendientes" (No pending conferences), visit the Agenda page to browse and enroll in available conferences.
+
+---
+
+## Attendance History (Certificados de Asistencia)
+
+This section displays conferences you've successfully attended and had your presence confirmed via QR code scanning.
+
+### What You'll See
+
+For each completed conference:
+- ✅ **Completion Badge**: Green checkmark indicator
+- **Conference Title**: With green highlight
+- **Date and Time**: When the conference took place
+- **Location**: Where the conference was held
+- **Status**: "Confirmada presencialmente por Escáner QR" (Confirmed in person via QR Scanner)
+- **COMPLETADO Badge**: Visual completion indicator
+
+<Note>
+  Conferences only appear in this section after you've scanned the QR code at the event. See the [QR Attendance](/user-guide/qr-attendance) guide for more details.
+</Note>
+
+### Empty History
+
+If you see "Todavía no has asistido a ninguna conferencia" (You haven't attended any conferences yet), it means:
+- You haven't attended any enrolled conferences yet, or
+- You haven't scanned the attendance QR code at the conferences you attended
+
+---
+
+## Real-Time Synchronization
+
+Your profile data synchronizes across browser tabs automatically:
+- Changes in one tab reflect immediately in other open tabs
+- Logout in one tab logs you out everywhere
+- Conference enrollments and cancellations update instantly
+
+## Offline Functionality
+
+<Note>
+  Your profile works in offline mode:
+  - Changes are saved locally in your browser
+  - Updates sync to the server when you reconnect
+  - You can view your data even without internet connection
+</Note>
+
+## Profile Data Privacy
+
+Your profile information is:
+- Stored securely on the server
+- Accessible only to you and authorized administrators
+- Used exclusively for CONIITI 2026 event management
+- Protected under Colombian data protection laws
+
+## Troubleshooting
+
+### Profile Not Loading
+
+**Problem**: You're redirected to login when accessing `/perfil`
+
+**Solution**: 
+- Ensure you're logged in
+- Check if your session expired
+- Try logging in again
+
+### Changes Not Saving
+
+**Problem**: Profile updates don't persist
+
+**Solution**:
+- Check your internet connection
+- Ensure you clicked "Guardar" (Save)
+- Try refreshing the page
+- Contact support if the issue persists
+
+### Missing Conference Information
+
+**Problem**: Enrolled conferences don't appear
+
+**Solution**:
+- Verify you're logged in with the correct account
+- Check the Agenda page to confirm your enrollments
+- Try refreshing the page
+
+## Need Assistance?
+
+For profile-related issues, contact:
+- **Email**: coniiti@ucatolica.edu.co
+- **Phone**: +57 (601) 327 7300
+- **Location**: Bogotá, Colombia

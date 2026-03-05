@@ -1,0 +1,358 @@
+---
+title: Theming
+description: Dynamic theming system and design customization for CONIITI 2026
+---
+
+# Theming
+
+CONIITI 2026 implements a dynamic theming system using **CSS Custom Properties** (CSS Variables) with country-based theme variants and runtime customization.
+
+## Design System
+
+The application uses a **Glassmorphism** design style with the following foundations:
+
+- **Typography**: Crimson Pro (headings) + Inter (body)
+- **Primary Color**: `#2563EB` (Blue)
+- **Secondary Color**: `#1E293B` (Dark slate)
+- **Accent Color**: `#F97316` (Orange)
+- **Background**: `#F8FAFC` (Light gray)
+
+## CSS Variables
+
+All theme values are defined as CSS custom properties in `:root`:
+
+```css title="src/styles/global.css"
+:root {
+  /* Colors */
+  --primary-color: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-light: #EFF6FF;
+  --secondary-color: #1E293B;
+  --accent-color: #F97316;
+  --accent-hover: #EA6C0A;
+
+  /* Gradients */
+  --btn-gradient: linear-gradient(135deg, #2563EB, #1E40AF);
+  --btn-hover-gradient: linear-gradient(135deg, #1D4ED8, #1E3A8A);
+  --hero-gradient: linear-gradient(135deg, #1E293B 0%, #1E40AF 50%, #0F172A 100%);
+
+  /* Glassmorphism */
+  --bg-page: #F8FAFC;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px rgba(37, 99, 235, 0.12);
+  --card-shadow: 0 4px 24px rgba(30, 41, 59, 0.08);
+  --card-shadow-hover: 0 16px 48px rgba(30, 41, 59, 0.15);
+
+  /* Typography */
+  --text-primary: #1E293B;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-on-primary: #ffffff;
+
+  /* Borders & Radius */
+  --border-color: #E2E8F0;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Spacing */
+  --container-max: 1280px;
+  --section-pad: 5rem 1.5rem;
+
+  /* Transitions */
+  --transition-fast: all 0.15s ease;
+  --transition-base: all 0.25s ease;
+  --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+```
+
+## Country-Based Themes
+
+The system supports predefined themes for different countries, applied via body classes:
+
+### Colombia Theme
+
+```css title="src/styles/global.css"
+body.theme-colombia {
+  --primary-color: #003893;     /* Blue from flag */
+  --primary-hover: #002d75;
+  --secondary-color: #f1c40f;   /* Yellow from flag */
+  --accent-color: #ce1126;      /* Red from flag */
+  --btn-gradient: linear-gradient(90deg, #f1c40f, #003893);
+  --text-on-primary: #ffffff;
+}
+```
+
+### Italy Theme
+
+```css title="src/styles/global.css"
+body.theme-italy {
+  --primary-color: #008C45;     /* Green from flag */
+  --primary-hover: #005F2E;
+  --secondary-color: #CD212A;   /* Red from flag */
+  --accent-color: #008C45;
+  --btn-gradient: linear-gradient(90deg, #008C45, #CD212A);
+  --text-on-primary: #ffffff;
+  --header-bg: #1a1a1a;
+}
+```
+
+### Mexico Theme
+
+```css title="src/styles/global.css"
+body.theme-mexico {
+  --primary-color: #006847;     /* Green from flag */
+  --primary-hover: #005036;
+  --secondary-color: #ce1126;   /* Red from flag */
+  --accent-color: #ce1126;
+  --btn-gradient: linear-gradient(90deg, #006847, #ce1126);
+  --text-on-primary: #ffffff;
+}
+```
+
+## Runtime Theme Application
+
+Themes are applied dynamically through the Layout component:
+
+```tsx title="src/components/Layout.tsx" {3-6}
+const refreshConfig = () => {
+  // Apply persistent theme
+  const theme = localStorage.getItem("site_theme")
+  if (theme && theme !== "default") {
+    document.body.className = `theme-${theme}`
+  } else {
+    document.body.className = ""
+  }
+
+  // Apply custom colors if exist
+  const customPrimary = localStorage.getItem("custom_primary_color")
+  if (customPrimary) {
+    document.documentElement.style.setProperty('--primary-color', customPrimary)
+  } else {
+    document.documentElement.style.setProperty('--primary-color', "#2563EB")
+  }
+
+  const customSecondary = localStorage.getItem("custom_secondary_color")
+  if (customSecondary) {
+    document.documentElement.style.setProperty('--secondary-color', customSecondary)
+  } else {
+    document.documentElement.style.setProperty('--secondary-color', "#1E293B")
+  }
+
+  // Additional custom color properties...
+}
+```
+
+## Custom Color Overrides
+
+Administrators can customize colors via the Admin panel, which are stored in localStorage:
+
+```tsx title="Admin customization example"
+// Store custom colors
+localStorage.setItem("custom_primary_color", "#FF5733")
+localStorage.setItem("custom_secondary_color", "#333333")
+localStorage.setItem("custom_bg_color", "#F0F0F0")
+localStorage.setItem("custom_text_color", "#1a1a1a")
+localStorage.setItem("custom_header_bg", "#222222")
+
+// Trigger refresh
+window.dispatchEvent(new Event('site-config-updated'))
+```
+
+## Using Theme Variables
+
+Apply CSS variables in your styles:
+
+```css
+.button {
+  background: var(--primary-color);
+  color: var(--text-on-primary);
+  border-radius: var(--radius-md);
+  transition: var(--transition-base);
+}
+
+.button:hover {
+  background: var(--primary-hover);
+}
+
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-lg);
+}
+```
+
+Inline styles with CSS variables:
+
+```tsx title="Component example"
+<button
+  style={{
+    background: 'var(--primary-color)',
+    color: 'white',
+    padding: '10px 20px',
+    borderRadius: 'var(--radius-md)'
+  }}
+>
+  Click Me
+</button>
+```
+
+## Typography System
+
+### Fonts
+
+The application uses two primary font families:
+
+```css title="src/styles/global.css"
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: 'Crimson Pro', serif;
+  letter-spacing: -0.02em;
+}
+```
+
+### Custom Font (Sora)
+
+Optional custom fonts are stored in `src/fonts/Sora/` and can be loaded as needed.
+
+## Logo Customization
+
+Logos can be customized and persisted:
+
+```tsx title="src/components/Layout.tsx" {2-5}
+const [logoEvento, setLogoEvento] = useState("/logo-coniiti.png")
+
+const savedLogoEvento = localStorage.getItem("site_logo_evento")
+if (savedLogoEvento) setLogoEvento(savedLogoEvento)
+else setLogoEvento("/logo-coniiti.png")
+```
+
+In the JSX:
+
+```tsx
+<img
+  src={logoEvento}
+  alt="Logo Coniiti"
+  className="logo-event"
+  onError={() => {
+    localStorage.removeItem("site_logo_evento");
+    setLogoEvento("/logo-coniiti.png");
+  }}
+/>
+```
+
+## Event System for Theme Updates
+
+The Layout component listens for configuration updates:
+
+```tsx title="src/components/Layout.tsx"
+useEffect(() => {
+  refreshConfig()
+
+  window.addEventListener('site-config-updated', refreshConfig)
+  return () => {
+    window.removeEventListener('site-config-updated', refreshConfig)
+  }
+}, [])
+```
+
+Trigger updates from anywhere:
+
+```tsx
+// After updating theme in Admin panel
+window.dispatchEvent(new Event('site-config-updated'))
+```
+
+## Responsive Design
+
+The theme system is mobile-first with breakpoints:
+
+```css
+/* Mobile styles (default) */
+.container {
+  padding: 1rem;
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .container {
+    padding: 2rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+  }
+}
+```
+
+## Dark Mode Support
+
+While not currently implemented, the architecture supports dark mode:
+
+```css
+/* Example dark mode theme */
+body.theme-dark {
+  --bg-page: #0F172A;
+  --text-primary: #F8FAFC;
+  --bg-card: rgba(30, 41, 59, 0.85);
+  /* ... other dark mode variables */
+}
+```
+
+## Best Practices
+
+1. **Always use CSS variables** - Never hardcode colors
+2. **Test theme variants** - Ensure UI works with all country themes
+3. **Provide fallbacks** - Default values for custom colors
+4. **Semantic naming** - Use `--primary-color` not `--blue`
+5. **Consistent spacing** - Use `--radius-*` and `--section-pad` variables
+6. **Transitions** - Apply `--transition-*` for smooth interactions
+
+## Customization Workflow
+
+### For Administrators
+
+1. Navigate to Admin Panel (`/admin`)
+2. Go to "Configuración de Página"
+3. Select country theme or customize colors
+4. Upload custom logos
+5. Changes persist in localStorage
+6. All users see updates on next page load
+
+### For Developers
+
+1. Define new theme in `src/styles/global.css`:
+   ```css
+   body.theme-custom {
+     --primary-color: #yourcolor;
+     /* ... */
+   }
+   ```
+
+2. Apply theme:
+   ```tsx
+   localStorage.setItem("site_theme", "custom")
+   window.dispatchEvent(new Event('site-config-updated'))
+   ```
+
+3. Test across all pages and components
+
+## Next Steps
+
+- [Components](/development/frontend/components) - See how components use theming
+- [Project Structure](/development/frontend/project-structure) - Understand file organization
+- Explore `src/styles/global.css` for complete design system

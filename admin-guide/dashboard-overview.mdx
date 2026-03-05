@@ -1,0 +1,201 @@
+---
+title: Dashboard Overview
+description: Complete guide to the CONIITI 2026 admin dashboard and its features
+---
+
+## Admin Dashboard Overview
+
+The CONIITI 2026 admin dashboard provides comprehensive tools for managing the conference website, speakers, schedules, and analytics. Access levels determine which features are available to each administrator.
+
+## Access Levels
+
+The system supports four distinct user roles with different permissions:
+
+<AccordionGroup>
+  <Accordion title="SUPER_ADMIN" icon="crown">
+    **Full Access**: Complete control over all system features including:
+    - All conference and speaker management
+    - Site configuration and theming
+    - User management
+    - Performance metrics
+    - Analytics dashboard
+    - Trash/Restoration
+  </Accordion>
+
+  <Accordion title="ADMIN / CONTENT_MANAGER" icon="user-gear">
+    **Event Management**: Access to event-related features:
+    - Conference CRUD operations
+    - Speaker management
+    - Analytics viewing
+    - Limited settings access
+  </Accordion>
+
+  <Accordion title="VIEWER" icon="eye">
+    **Read-Only**: View-only access to:
+    - Conference listings
+    - Speaker profiles
+    - No editing capabilities
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+Role badges are displayed prominently at the top of the dashboard. The system checks `localStorage.getItem("user_session")` to verify user role on mount.
+</Note>
+
+## Dashboard Navigation
+
+The admin panel uses a sidebar navigation system with the following sections:
+
+### Main Sections
+
+| Section | Icon | Access Level | Purpose |
+|---------|------|--------------|----------|
+| **Agenda / Conferencias** | 📅 | All | Manage conference schedule |
+| **Invitados** | 👥 | All | Manage speakers/guests |
+| **Papelera** | 🗑️ | SUPER_ADMIN | Restore deleted items |
+| **Analíticas** | 📊 | ADMIN+ | View usage analytics |
+| **Configuración Página** | ⚙️ | SUPER_ADMIN | Site customization |
+| **Usuarios** | 👤 | SUPER_ADMIN | User management |
+| **Rendimiento** | ⏱️ | SUPER_ADMIN | Performance metrics |
+
+## Getting Started
+
+<Steps>
+  <Step title="Access the Admin Panel">
+    Navigate to `/admin` after logging in with admin credentials. The system automatically redirects unauthorized users.
+    
+    ```typescript
+    // Access control in Admin.tsx:86-96
+    useEffect(() => {
+        const session = localStorage.getItem("user_session")
+        if (session) {
+            const user = JSON.parse(session)
+            if (user.role === "SUPER_ADMIN" || user.role === "ADMIN" || 
+                user.role === "VIEWER" || user.role === "CONTENT_MANAGER") {
+                setUserRole(user.role)
+            } else {
+                navigate("/") // No permissions
+            }
+        } else {
+            navigate("/login") // No session
+        }
+    }, [navigate])
+    ```
+  </Step>
+
+  <Step title="Select Your Section">
+    Use the sidebar to navigate between different management areas. The active tab is highlighted with primary color styling.
+  </Step>
+
+  <Step title="Perform Actions">
+    Each section provides specific CRUD operations appropriate to that data type. Changes are persisted to both API and localStorage for resilience.
+  </Step>
+</Steps>
+
+## Data Management Strategy
+
+The admin dashboard implements a **hybrid persistence model**:
+
+<CodeGroup>
+```typescript API-First with Fallback
+// Admin.tsx:138-220
+const fetchAllData = async () => {
+    setIsLoading(true);
+    let ponenciasData: any[] = [];
+    let ponentesData: any[] = [];
+    let usuariosData: any[] = [];
+
+    try {
+        const { getPonencias, getPonentes, getUsuarios } = await import("../services/api");
+
+        // Individual attempts to prevent cascade failure
+        try { ponenciasData = await getPonencias(); } 
+        catch (e) { console.warn("API Ponencias failed"); }
+        
+        try { ponentesData = await getPonentes(); } 
+        catch (e) { console.warn("API Ponentes failed"); }
+        
+        try { usuariosData = await getUsuarios(); } 
+        catch (e) { console.warn("API Usuarios failed"); }
+
+        // Merge with localStorage fallback
+        const savedConfs = JSON.parse(localStorage.getItem("site_conferences") || '[]');
+        const finalConfs = ponenciasData.length > 0 ? ponenciasData : 
+                          (savedConfs.length > 0 ? savedConfs : initialConferences);
+        setConferences(finalConfs);
+    } catch (err) {
+        // Graceful degradation to mock data
+        setConferences(initialConferences);
+    }
+}
+```
+
+```typescript Auto-Persistence
+// Admin.tsx:227-240
+// Automatic localStorage sync
+useEffect(() => {
+    localStorage.setItem("site_conferences", JSON.stringify(conferences))
+}, [conferences])
+
+useEffect(() => {
+    localStorage.setItem("site_deleted_conferences", JSON.stringify(deletedConferences))
+}, [deletedConferences])
+
+useEffect(() => {
+    if (speakers.length > 0) {
+        localStorage.setItem("site_speakers", JSON.stringify(speakers))
+    }
+}, [speakers])
+```
+</CodeGroup>
+
+<Warning>
+The system prioritizes API data when available but gracefully falls back to localStorage and then mock data. This ensures the admin panel remains functional even during API outages.
+</Warning>
+
+## Loading States
+
+An overlay loader appears during async operations:
+
+```tsx
+{isLoading && (
+    <div className="admin-loading-overlay">
+        <div className="spinner"></div>
+        <p>Procesando...</p>
+    </div>
+)}
+```
+
+## State Management
+
+Key state variables used throughout the dashboard:
+
+```typescript
+const [userRole, setUserRole] = useState<string | null>(null)
+const [conferences, setConferences] = useState<any[]>([])
+const [speakers, setSpeakers] = useState<any[]>([])
+const [deletedConferences, setDeletedConferences] = useState<any[]>([])
+const [registeredUsers, setRegisteredUsers] = useState<any[]>([])
+const [activeTab, setActiveTab] = useState("conferences")
+const [isLoading, setIsLoading] = useState(false)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Manage Speakers" icon="users" href="/admin-guide/managing-speakers">
+    Learn how to add, edit, and organize speaker profiles
+  </Card>
+  
+  <Card title="Manage Conferences" icon="calendar" href="/admin-guide/managing-conferences">
+    Create and manage conference sessions and schedules
+  </Card>
+  
+  <Card title="Customize Theme" icon="palette" href="/admin-guide/theme-customization">
+    Personalize colors, logos, and site branding
+  </Card>
+  
+  <Card title="User Management" icon="user-shield" href="/admin-guide/user-management">
+    Manage registered users and access control
+  </Card>
+</CardGroup>

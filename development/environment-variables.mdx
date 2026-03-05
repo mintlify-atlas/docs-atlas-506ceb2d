@@ -1,0 +1,340 @@
+---
+title: 'Environment Variables'
+description: 'Complete reference for configuring environment variables in CONIITI 2026'
+---
+
+# Environment Variables
+
+The CONIITI 2026 platform requires environment variables for both the backend API and frontend application. This guide covers all required and optional variables.
+
+## Overview
+
+The application uses two separate `.env` files:
+- **Backend**: `backend/.env` - Server configuration and secrets
+- **Frontend**: `frontend/vite-project/.env` - Client-side configuration (public variables only)
+
+<Warning>
+  Never commit `.env` files to version control. They contain sensitive credentials.
+</Warning>
+
+## Backend Environment Variables
+
+### Location
+
+Create a `.env` file in the `backend/` directory:
+
+```
+coniiti-2026/
+└── backend/
+    └── .env  # Create this file
+```
+
+### Required Variables
+
+<ParamField path="SUPABASE_URL" type="string" required>
+  Your Supabase project URL. Found in your Supabase project settings under "API".
+  
+  **Example**: `https://abcdefghijklmnop.supabase.co`
+  
+  **Used for**: Creating the Supabase client for database operations and authentication
+</ParamField>
+
+<ParamField path="SUPABASE_ANON_KEY" type="string" required>
+  Your Supabase anonymous (public) key. Found in project settings under "API" → "Project API keys".
+  
+  **Used for**: Public Supabase client operations and token validation
+  
+  <Warning>This key is safe to expose on the client side, but still keep it in `.env`</Warning>
+</ParamField>
+
+<ParamField path="SUPABASE_SERVICE_ROLE_KEY" type="string" required>
+  Your Supabase service role key with admin privileges. Found in project settings under "API" → "Project API keys".
+  
+  **Used for**: Server-side admin operations that bypass Row Level Security (RLS)
+  
+  <Warning>NEVER expose this key to the client. Keep it secret!</Warning>
+</ParamField>
+
+### Optional Variables
+
+<ParamField path="PORT" type="number" default="3000">
+  The port number where the backend API server will run.
+  
+  **Default**: `3000`
+  
+  **Example**: `PORT=3001`
+</ParamField>
+
+### Backend .env Example
+
+<CodeGroup>
+```bash Development
+# Supabase Configuration
+SUPABASE_URL=https://yourproject.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Server Configuration
+PORT=3000
+```
+
+```bash Production
+# Supabase Configuration (Production)
+SUPABASE_URL=https://yourprod.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Server Configuration
+PORT=8080
+```
+</CodeGroup>
+
+## Frontend Environment Variables
+
+### Location
+
+Create a `.env` file in the `frontend/vite-project/` directory:
+
+```
+coniiti-2026/
+└── frontend/
+    └── vite-project/
+        └── .env  # Create this file
+```
+
+<Note>
+  Vite requires all client-side environment variables to be prefixed with `VITE_`
+</Note>
+
+### Required Variables
+
+<ParamField path="VITE_SUPABASE_URL" type="string" required>
+  Your Supabase project URL. Must match the backend `SUPABASE_URL`.
+  
+  **Example**: `https://abcdefghijklmnop.supabase.co`
+  
+  **Used in**: `frontend/vite-project/src/services/api.ts:3`
+</ParamField>
+
+<ParamField path="VITE_SUPABASE_ANON_KEY" type="string" required>
+  Your Supabase anonymous key. Must match the backend `SUPABASE_ANON_KEY`.
+  
+  **Used in**: `frontend/vite-project/src/services/api.ts:4`
+</ParamField>
+
+### Optional Variables
+
+<ParamField path="VITE_API_URL" type="string" default="http://localhost:3000/api">
+  The base URL for the backend API.
+  
+  **Default**: `http://localhost:3000/api`
+  
+  **Production example**: `https://api.coniiti2026.com/api`
+  
+  **Used in**: `frontend/vite-project/src/services/api.ts:8`
+</ParamField>
+
+### Frontend .env Example
+
+<CodeGroup>
+```bash Development
+# Supabase Configuration
+VITE_SUPABASE_URL=https://yourproject.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# API Configuration
+VITE_API_URL=http://localhost:3000/api
+```
+
+```bash Production
+# Supabase Configuration
+VITE_SUPABASE_URL=https://yourprod.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# API Configuration
+VITE_API_URL=https://api.coniiti2026.com/api
+```
+</CodeGroup>
+
+## Getting Your Supabase Credentials
+
+<Steps>
+  <Step title="Log in to Supabase">
+    Go to [supabase.com](https://supabase.com) and log in to your account.
+  </Step>
+
+  <Step title="Select Your Project">
+    Choose your CONIITI 2026 project from the dashboard.
+  </Step>
+
+  <Step title="Open Project Settings">
+    Click the gear icon (⚙️) in the left sidebar to open **Project Settings**.
+  </Step>
+
+  <Step title="Navigate to API Settings">
+    In the settings menu, click on **API** to view your credentials.
+  </Step>
+
+  <Step title="Copy Your Credentials">
+    You'll find:
+    - **Project URL** - This is your `SUPABASE_URL`
+    - **anon/public key** - This is your `SUPABASE_ANON_KEY`
+    - **service_role key** - This is your `SUPABASE_SERVICE_ROLE_KEY`
+    
+    <Warning>
+      Keep the service_role key secret! It has full admin access to your database.
+    </Warning>
+  </Step>
+</Steps>
+
+## Environment Variable Usage in Code
+
+### Backend Usage
+
+The backend accesses environment variables directly through `process.env`:
+
+```typescript backend/src/config/supabase.ts
+import { createClient } from '@supabase/supabase-js'
+
+// Public client (validates tokens)
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+)
+
+// Admin client (for secure operations)
+export const admin_supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+)
+```
+
+```typescript backend/src/server.ts
+const PORT = process.env.PORT || 3000
+
+app.listen(PORT, () => {
+  console.log(`Server running on: http://localhost:${PORT}`)
+})
+```
+
+### Frontend Usage
+
+The frontend accesses Vite environment variables through `import.meta.env`:
+
+```typescript frontend/vite-project/src/services/api.ts
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+```
+
+## Security Best Practices
+
+<Warning>
+  Follow these security guidelines to protect your application:
+</Warning>
+
+### Do's ✅
+
+- **DO** keep `.env` files in `.gitignore`
+- **DO** use different Supabase projects for development and production
+- **DO** rotate your service role key if it's ever exposed
+- **DO** use environment variables for all sensitive data
+- **DO** document required variables for your team
+
+### Don'ts ❌
+
+- **DON'T** commit `.env` files to Git
+- **DON'T** share service role keys in Slack, email, or other unsecured channels
+- **DON'T** use production credentials in development
+- **DON'T** expose `SUPABASE_SERVICE_ROLE_KEY` to the frontend
+- **DON'T** hardcode credentials in source files
+
+## Deployment Considerations
+
+### Render.com
+
+If deploying to Render (as configured in `render.yaml`):
+
+1. Go to your Render dashboard
+2. Select your service
+3. Navigate to **Environment** tab
+4. Add each variable as a key-value pair
+5. Redeploy your service
+
+### Vercel
+
+```bash
+# Using Vercel CLI
+vercel env add VITE_SUPABASE_URL
+vercel env add VITE_SUPABASE_ANON_KEY
+vercel env add VITE_API_URL
+```
+
+### Docker
+
+For Docker deployments, use an `.env` file or pass variables:
+
+```bash
+docker run -e SUPABASE_URL=https://... -e SUPABASE_ANON_KEY=... your-image
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Environment variables not loading">
+    **Backend**: Ensure you're using `dotenv/config` or calling `dotenv.config()` at the top of your entry file.
+    
+    **Frontend**: Restart the Vite dev server after changing `.env` files. Vite loads them at startup.
+  </Accordion>
+
+  <Accordion title="undefined values in production">
+    Verify that:
+    - Variables are set in your hosting platform's environment settings
+    - Frontend variables are prefixed with `VITE_`
+    - You've rebuilt the application after adding new variables
+  </Accordion>
+
+  <Accordion title="CORS errors with API calls">
+    Check that `VITE_API_URL` points to the correct backend URL, including `/api` suffix.
+  </Accordion>
+
+  <Accordion title="Supabase authentication failing">
+    Verify:
+    - `SUPABASE_URL` and `SUPABASE_ANON_KEY` match between frontend and backend
+    - Your Supabase project is active
+    - The keys are copied completely (they're very long)
+  </Accordion>
+</AccordionGroup>
+
+## Environment Variable Checklist
+
+Use this checklist when setting up a new environment:
+
+- [ ] Created `backend/.env` file
+- [ ] Added `SUPABASE_URL` to backend
+- [ ] Added `SUPABASE_ANON_KEY` to backend
+- [ ] Added `SUPABASE_SERVICE_ROLE_KEY` to backend
+- [ ] Set `PORT` if needed (optional)
+- [ ] Created `frontend/vite-project/.env` file
+- [ ] Added `VITE_SUPABASE_URL` to frontend
+- [ ] Added `VITE_SUPABASE_ANON_KEY` to frontend
+- [ ] Added `VITE_API_URL` to frontend (optional)
+- [ ] Verified `.env` files are in `.gitignore`
+- [ ] Tested the application locally
+- [ ] Configured production environment variables in hosting platform
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Setup" icon="database" href="/development/database-setup">
+    Configure your Supabase database tables
+  </Card>
+  <Card title="Local Setup" icon="laptop-code" href="/development/local-setup">
+    Return to the local setup guide
+  </Card>
+</CardGroup>

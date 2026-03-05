@@ -1,0 +1,206 @@
+---
+title: Project Structure
+description: Frontend directory organization and architecture for CONIITI 2026
+---
+
+# Project Structure
+
+The CONIITI 2026 frontend is built with **React 19**, **TypeScript**, and **Vite**. The application follows a modular architecture with clear separation of concerns.
+
+## Technology Stack
+
+- **Framework**: React 19 with TypeScript
+- **Build Tool**: Vite 7.3
+- **Routing**: React Router DOM v7
+- **Authentication**: Supabase Auth
+- **UI Components**: Custom components with Glassmorphism design
+- **Styling**: CSS with CSS Variables for theming
+- **Icons**: Lucide React
+- **Charts**: Recharts
+- **QR Codes**: react-qr-code, @yudiel/react-qr-scanner
+- **Notifications**: Sonner
+
+## Directory Layout
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── Layout.tsx       # Main layout with header/footer
+│   ├── ConferenceCard.tsx
+│   ├── CountdownTimer.tsx
+│   └── DayTabs.tsx
+├── pages/              # Route-based page components
+│   ├── Home.tsx
+│   ├── Agenda.tsx
+│   ├── Invitados.tsx
+│   ├── Login.tsx
+│   ├── Register.tsx
+│   ├── Profile.tsx
+│   ├── Admin.tsx
+│   └── ResetPassword.tsx
+├── services/           # API and external service integrations
+│   └── api.ts          # Supabase client and API functions
+├── types/              # TypeScript type definitions
+│   └── conference.ts   # Conference and Speaker types
+├── utils/              # Utility functions and helpers
+│   ├── i18n.ts         # Internationalization (ES/EN)
+│   └── tracker.ts      # Analytics tracking utilities
+├── data/               # Mock data and constants
+│   └── conference_mocks.ts
+├── styles/             # Global and component styles
+│   ├── global.css      # Design system and theme variables
+│   ├── index.css       # Entry point styles
+│   ├── components/     # Component-specific styles
+│   └── pages/          # Page-specific styles
+├── fonts/              # Custom fonts (Sora, Crimson Pro, Inter)
+├── App.tsx             # Root component with routes
+└── main.tsx            # Application entry point
+```
+
+## Core Files
+
+### main.tsx
+
+Entry point that mounts the React application with Router:
+
+```tsx title="src/main.tsx"
+import React from "react"
+import ReactDOM from "react-dom/client"
+import { BrowserRouter } from "react-router-dom"
+import App from "./App"
+import "./styles/index.css"
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
+)
+```
+
+### App.tsx
+
+Defines routes and implements performance monitoring:
+
+```tsx title="src/App.tsx" {19-51}
+import { useEffect } from "react"
+import { Routes, Route, useLocation } from "react-router-dom"
+import { trackEvent } from "./utils/tracker"
+import Layout from "./components/Layout"
+import { Toaster } from 'sonner'
+// ... page imports
+
+export default function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // 1. Page load time monitoring
+    const navStart = performance.now();
+    trackEvent('PAGE_VIEW', location.pathname);
+
+    const timer = setTimeout(() => {
+      const loadTime = Math.round(performance.now() - navStart);
+      trackEvent('PAGE_LOAD_TIME', location.pathname, 'Carga de ruta', loadTime);
+    }, 100);
+
+    // 2. Resource monitoring with PerformanceObserver
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry: any) => {
+        if (entry.entryType === 'resource') {
+          const isImg = ['img', 'image'].includes(entry.initiatorType) ||
+            /\.(jpg|jpeg|png|webp|gif|svg)/.test(entry.name);
+
+          if (isImg) {
+            trackEvent('IMAGE_LOAD', location.pathname, entry.name, 
+              Math.round(entry.duration), entry.transferSize);
+          }
+          trackEvent('RESOURCE_LOAD', location.pathname, entry.name, 
+            Math.round(entry.duration), entry.transferSize);
+        }
+      });
+    });
+
+    observer.observe({ type: 'resource', buffered: true });
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [location.pathname]);
+
+  return (
+    <>
+      <Toaster position="top-center" richColors />
+      <Layout>
+        <Routes>
+          {/* Routes defined here */}
+        </Routes>
+      </Layout>
+    </>
+  )
+}
+```
+
+## Module Organization
+
+### Components (`/components`)
+Reusable UI elements used across multiple pages. All components are functional components with TypeScript.
+
+### Pages (`/pages`)
+Route-based components that represent full pages:
+- `Home.tsx` - Landing page with countdown
+- `Agenda.tsx` - Conference schedule with day filters
+- `Invitados.tsx` - Speaker profiles
+- `Login.tsx` / `Register.tsx` - Authentication
+- `Profile.tsx` - User profile and registrations
+- `Admin.tsx` - Admin dashboard for content management
+
+### Services (`/services`)
+API integration layer using Supabase:
+- Database queries
+- Authentication helpers
+- Data mapping functions
+
+### Types (`/types`)
+TypeScript interfaces and type definitions for type safety throughout the application.
+
+### Utils (`/utils`)
+Helper functions:
+- **i18n.ts**: Spanish/English translations
+- **tracker.ts**: Analytics event tracking
+
+### Styles (`/styles`)
+CSS organization:
+- `global.css` - Design system variables, themes, and global styles
+- `index.css` - Entry point that imports global styles
+- Component/page-specific stylesheets in subdirectories
+
+## Build Configuration
+
+The project uses Vite for fast development and optimized production builds:
+
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  }
+}
+```
+
+## TypeScript Configuration
+
+Strict TypeScript is enabled for better type safety. See `tsconfig.json` for compiler options.
+
+## State Management
+
+The application primarily uses:
+- **React Hooks** (`useState`, `useEffect`)
+- **LocalStorage** for persistence (user session, theme, registrations)
+- **Custom Events** for cross-component communication
+
+## Next Steps
+
+- [Routing](/development/frontend/routing) - Learn about route configuration
+- [Components](/development/frontend/components) - Explore reusable components
+- [Theming](/development/frontend/theming) - Customize the design system

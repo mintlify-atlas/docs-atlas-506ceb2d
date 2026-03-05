@@ -1,0 +1,575 @@
+---
+title: Theme Customization
+description: Complete guide to personalizing the CONIITI 2026 website appearance, colors, logos, and branding
+---
+
+## Theme Customization
+
+The theme customization system allows SUPER_ADMIN users to completely rebrand the CONIITI website with custom colors, logos, banners, and content across all pages.
+
+<Warning>
+Theme customization is **only available to SUPER_ADMIN** users. Other admin roles cannot access these settings.
+</Warning>
+
+## Accessing Theme Settings
+
+<Steps>
+  <Step title="Navigate to Configuración">
+    Click **⚙️ Configuración Página** in the admin sidebar.
+  </Step>
+
+  <Step title="Select Settings Category">
+    Use the sub-navigation tabs to access different configuration areas:
+    - ⚙️ **General** - Core site settings
+    - 🏠 **Inicio** - Home page customization
+    - 👥 **Invitados** - Speakers page settings
+    - 📅 **Agenda** - Schedule page configuration
+    - ℹ️ **Acerca De** - About page content
+    - ✉️ **Contacto** - Contact information
+    - 🏛️ **Aforos y Sedes** - Venue management
+  </Step>
+</Steps>
+
+## General Settings
+
+### Event Name
+
+Set the primary event name displayed throughout the site:
+
+```tsx
+<div className="form-group">
+    <label>Nombre del Evento</label>
+    <input type="text" defaultValue="CONIITI 2026" />
+</div>
+```
+
+### Theme Selection
+
+Choose from predefined country themes:
+
+```typescript
+// Admin.tsx:1047-1063
+<select
+    defaultValue={localStorage.getItem("site_theme") || "default"}
+    onChange={(e) => {
+        const theme = e.target.value;
+        localStorage.setItem("site_theme", theme);
+        document.body.className = theme === "default" ? "" : `theme-${theme}`;
+        dispatchUpdate();
+    }}
+    className="theme-select"
+>
+    <option value="default">Estándar (Universidad Católica)</option>
+    <option value="colombia">Colombia (Amarillo, Azul y Rojo)</option>
+    <option value="italy">Italia (Verde, Blanco y Rojo)</option>
+    <option value="mexico">México (Verde y Rojo)</option>
+</select>
+```
+
+<Info>
+Theme selection applies CSS class to body element, triggering predefined color schemes. Custom themes can be added via CSS.
+</Info>
+
+### Banner Image
+
+Upload a custom header banner:
+
+<Steps>
+  <Step title="View Current Banner">
+    The current banner displays in a preview box (100px height).
+  </Step>
+
+  <Step title="Upload New Banner">
+    Click the file input to select an image:
+    
+    ```typescript
+    // Admin.tsx:1073-1088
+    <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                if (file.size > 1500000) { 
+                    toast.error("La imagen es muy pesada (máx 1.5MB)."); 
+                    return; 
+                }
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (reader.result) {
+                        try { 
+                            localStorage.setItem("site_banner", reader.result as string); 
+                            dispatchUpdate(); 
+                        }
+                        catch { toast.error("La imagen sigue siendo muy grande."); }
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }}
+        className="file-input"
+    />
+    ```
+    
+    <Warning>
+    Banner images must be under **1.5MB**. Larger images will be rejected with an error message.
+    </Warning>
+  </Step>
+
+  <Step title="Restore Default">
+    Click **Restaurar Original** to revert to the default banner.
+  </Step>
+</Steps>
+
+### Logo Management
+
+Upload custom logos for both university and event branding:
+
+```tsx
+// Admin.tsx:1098-1133
+<div className="logos-edit-grid">
+    {/* University Logo */}
+    <div className="logo-upload-item">
+        <span>Logo Universidad</span>
+        <div className="mini-preview">
+            <img src={logoUniPreview} alt="Preview Uni" 
+                 style={{ height: '40px', objectFit: 'contain' }} />
+        </div>
+        <input type="file" accept="image/*" onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                if (file.size > 800000) { 
+                    alert("El logo es muy grande (máx 800KB)."); 
+                    return; 
+                }
+                const reader = new FileReader();
+                reader.onloadend = () => { 
+                    if (reader.result) { 
+                        localStorage.setItem("site_logo_uni", reader.result as string); 
+                        dispatchUpdate(); 
+                    } 
+                };
+                reader.readAsDataURL(file);
+            }
+        }} />
+        <button type="button" className="btn-remove-img-sm" 
+                onClick={() => { localStorage.removeItem("site_logo_uni"); dispatchUpdate(); }}>
+            Restaurar Original
+        </button>
+    </div>
+    
+    {/* Event Logo (similar structure) */}
+</div>
+```
+
+<Note>
+Logos are limited to **800KB** each. Both logos display in the header navigation across all pages.
+</Note>
+
+### Color Customization
+
+Define custom color palette for the entire site:
+
+```typescript
+// Admin.tsx:1135-1159
+<div className="color-picker-grid">
+    <div className="color-item">
+        <span>Fondo General</span>
+        <input type="color" value={bgColor} 
+               onChange={(e) => { 
+                   localStorage.setItem("custom_bg_color", e.target.value); 
+                   setBgColor(e.target.value); 
+                   dispatchUpdate(); 
+               }} />
+    </div>
+    <div className="color-item">
+        <span>Texto Principal</span>
+        <input type="color" value={textColor} 
+               onChange={(e) => { 
+                   localStorage.setItem("custom_text_color", e.target.value); 
+                   setTextColor(e.target.value); 
+                   dispatchUpdate(); 
+               }} />
+    </div>
+    <div className="color-item">
+        <span>Color de Cabecera</span>
+        <input type="color" value={headerColor} 
+               onChange={(e) => { 
+                   localStorage.setItem("custom_header_bg", e.target.value); 
+                   setHeaderColor(e.target.value); 
+                   dispatchUpdate(); 
+               }} />
+    </div>
+    <div className="color-item">
+        <span>Color Primario (Botones)</span>
+        <input type="color" value={primaryColor} 
+               onChange={(e) => { 
+                   localStorage.setItem("custom_primary_color", e.target.value); 
+                   setPrimaryColor(e.target.value); 
+                   dispatchUpdate(); 
+               }} />
+    </div>
+    <div className="color-item">
+        <span>Color Secundario</span>
+        <input type="color" value={secondaryColor} 
+               onChange={(e) => { 
+                   localStorage.setItem("custom_secondary_color", e.target.value); 
+                   setSecondaryColor(e.target.value); 
+                   dispatchUpdate(); 
+               }} />
+    </div>
+</div>
+```
+
+#### Available Color Controls
+
+| Control | Purpose | Default Value |
+|---------|---------|---------------|
+| **Fondo General** | Main background color | `#ffffff` |
+| **Texto Principal** | Primary text color | `#1b1a1a` |
+| **Color de Cabecera** | Header background | `#1f2a44` |
+| **Color Primario** | Buttons and CTAs | `#2563EB` |
+| **Color Secundario** | Accents and highlights | `#1E293B` |
+
+### Real-time Updates
+
+Color changes dispatch update events to refresh the UI:
+
+```typescript
+// Admin.tsx:44-54
+const dispatchUpdate = () => {
+    window.dispatchEvent(new Event('site-config-updated'));
+    setBannerPreview(localStorage.getItem("site_banner") || "/banner-header.png");
+    setLogoUniPreview(localStorage.getItem("site_logo_uni") || "/ucatolica-logo.png");
+    setLogoEventPreview(localStorage.getItem("site_logo_evento") || "/logo-coniiti.png");
+    setBgColor(localStorage.getItem("custom_bg_color") || "#ffffff");
+    setTextColor(localStorage.getItem("custom_text_color") || "#1b1a1a");
+    setHeaderColor(localStorage.getItem("custom_header_bg") || "#1f2a44");
+    setPrimaryColor(localStorage.getItem("custom_primary_color") || "#2563EB");
+    setSecondaryColor(localStorage.getItem("custom_secondary_color") || "#1E293B");
+};
+```
+
+<Tip>
+Changes update immediately across all pages listening for the `site-config-updated` event. No page reload required.
+</Tip>
+
+### Reset Customization
+
+Clear all custom styling and revert to defaults:
+
+```typescript
+// Admin.tsx:1168-1177
+<button type="button" className="btn-logout" 
+    style={{ marginLeft: '1rem', background: '#e74c3c' }}
+    onClick={() => {
+        if (confirm("¿Seguro que quieres borrar toda la personalización?")) {
+            ["site_banner", "site_logo_uni", "site_logo_evento", 
+             "custom_bg_color", "custom_text_color", "custom_header_bg", 
+             "custom_primary_color", "custom_secondary_color"]
+                .forEach(key => localStorage.removeItem(key));
+            dispatchUpdate();
+        }
+    }}>
+    Limpiar y Resetear Diseño
+</button>
+```
+
+<Warning>
+Resetting design clears all customizations **permanently**. This action cannot be undone. Always confirm before proceeding.
+</Warning>
+
+## Page-Specific Settings
+
+### Home Page (🏠 Inicio)
+
+Customize landing page content:
+
+```tsx
+// Admin.tsx:1182-1216
+<div className="form-group">
+    <label>Título Principal (Hero)</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("home_hero_title") || "CONIITI 2026"}
+           onChange={e => localStorage.setItem("home_hero_title", e.target.value)} />
+</div>
+
+<div className="form-group">
+    <label>Subtítulo del Hero</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("home_hero_subtitle") || 
+                        "Congreso Internacional de Innovación Tecnológica"}
+           onChange={e => localStorage.setItem("home_hero_subtitle", e.target.value)} />
+</div>
+
+<div className="form-group">
+    <label>Imagen de Fondo (Hero)</label>
+    <input type="file" accept="image/*" onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => { 
+                if (reader.result) 
+                    localStorage.setItem("home_hero_bg", reader.result as string); 
+            };
+            reader.readAsDataURL(file);
+        }
+    }} />
+</div>
+
+<div className="form-group">
+    <label>Texto del Botón Principal</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("home_btn_text") || "Ver Agenda"}
+           onChange={e => localStorage.setItem("home_btn_text", e.target.value)} />
+</div>
+```
+
+### Speakers Page (👥 Invitados)
+
+```tsx
+// Admin.tsx:1222-1286
+<div className="form-group">
+    <label>Título de la Sección</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("guests_title") || "Nuestros Invitados"}
+           onChange={e => localStorage.setItem("guests_title", e.target.value)} />
+</div>
+
+<div className="form-group">
+    <label>Subtítulo / Descripción</label>
+    <textarea rows={2} 
+              defaultValue={localStorage.getItem("guests_subtitle") || 
+                           "Expertos internacionales que compartirán su conocimiento"}
+              onChange={e => localStorage.setItem("guests_subtitle", e.target.value)}>
+    </textarea>
+</div>
+
+<div className="form-group">
+    <label>Mostrar Organización del Ponente</label>
+    <input type="checkbox" 
+           defaultChecked={localStorage.getItem("guests_show_org") !== "false"}
+           onChange={e => localStorage.setItem("guests_show_org", String(e.target.checked))} />
+</div>
+```
+
+<Info>
+The Invitados settings page also displays a real-time list of all registered speakers for quick reference and editing.
+</Info>
+
+### Agenda Page (📅 Agenda)
+
+Configure schedule display options:
+
+```tsx
+// Admin.tsx:1290-1473
+<div className="form-group">
+    <label>Título de la Sección</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("agenda_title") || "Agenda CONIITI 2026"}
+           onChange={e => localStorage.setItem("agenda_title", e.target.value)} />
+</div>
+
+<div className="form-group">
+    <label>Mostrar Filtros en la Agenda</label>
+    <input type="checkbox" 
+           defaultChecked={localStorage.getItem("agenda_show_filters") !== "false"}
+           onChange={e => localStorage.setItem("agenda_show_filters", String(e.target.checked))} />
+</div>
+
+<div className="form-group">
+    <label>Número de Columnas (Escritorio)</label>
+    <select defaultValue={localStorage.getItem("agenda_cols") || "auto"}
+            onChange={e => localStorage.setItem("agenda_cols", e.target.value)}>
+        <option value="auto">Automático (recomendado)</option>
+        <option value="2">2 columnas</option>
+        <option value="3">3 columnas</option>
+        <option value="4">4 columnas</option>
+    </select>
+</div>
+```
+
+See [Managing Conferences](/admin-guide/managing-conferences#day-management) for day and filter configuration details.
+
+### About Page (ℹ️ Acerca De)
+
+```tsx
+// Admin.tsx:1477-1505
+<div className="form-group">
+    <label>Título de la Sección</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("about_title") || "Acerca del CONIITI"}
+           onChange={e => localStorage.setItem("about_title", e.target.value)} />
+</div>
+
+<div className="form-group">
+    <label>Descripción del Evento</label>
+    <textarea rows={5} 
+              defaultValue={localStorage.getItem("about_description") || 
+                           "El Congreso Internacional de Innovación Tecnológica..."}
+              onChange={e => localStorage.setItem("about_description", e.target.value)}>
+    </textarea>
+</div>
+
+<div className="form-group">
+    <label>Fecha del Evento</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("about_date") || "2026"}
+           onChange={e => localStorage.setItem("about_date", e.target.value)} />
+</div>
+
+<div className="form-group">
+    <label>Lugar del Evento</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("about_location") || "Universidad Católica"}
+           onChange={e => localStorage.setItem("about_location", e.target.value)} />
+</div>
+```
+
+### Contact Page (✉️ Contacto)
+
+```tsx
+// Admin.tsx:1509-1542
+<div className="form-group">
+    <label>Correo Electrónico de Contacto</label>
+    <input type="email" 
+           defaultValue={localStorage.getItem("contact_email") || 
+                        "coniiti@ucatolica.edu.co"}
+           onChange={e => localStorage.setItem("contact_email", e.target.value)} />
+</div>
+
+<div className="form-group">
+    <label>Teléfono</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("contact_phone") || "+57 (601) 327 7300"}
+           onChange={e => localStorage.setItem("contact_phone", e.target.value)} />
+</div>
+
+<div className="form-group">
+    <label>Dirección</label>
+    <input type="text" 
+           defaultValue={localStorage.getItem("contact_address") || "Bogotá, Colombia"}
+           onChange={e => localStorage.setItem("contact_address", e.target.value)} />
+</div>
+```
+
+## Venue Capacity Management (🏛️ Aforos)
+
+Manage venue capacities for registration limits. See [Managing Conferences - Venue Management](/admin-guide/managing-conferences#venue-management) for complete details.
+
+## LocalStorage Keys Reference
+
+All theme settings persist via localStorage:
+
+```typescript
+// General
+site_theme: string                    // Theme identifier
+site_banner: string                   // Base64 banner image
+site_logo_uni: string                 // Base64 university logo
+site_logo_evento: string              // Base64 event logo
+
+// Colors
+custom_bg_color: string               // Hex color
+custom_text_color: string
+custom_header_bg: string
+custom_primary_color: string
+custom_secondary_color: string
+
+// Home Page
+home_hero_title: string
+home_hero_subtitle: string
+home_hero_bg: string                  // Base64 hero image
+home_btn_text: string
+
+// Speakers Page
+guests_title: string
+guests_subtitle: string
+guests_show_org: string               // "true" | "false"
+
+// Agenda Page
+agenda_title: string
+agenda_subtitle: string
+agenda_show_filters: string           // "true" | "false"
+agenda_cols: string                   // "auto" | "2" | "3" | "4"
+agenda_days_info: string              // JSON array of day objects
+agenda_num_days: string               // Number as string
+agenda_filters_config: string         // JSON array of filter configs
+
+// About Page
+about_title: string
+about_description: string
+about_date: string
+about_location: string
+
+// Contact Page
+contact_title: string
+contact_email: string
+contact_phone: string
+contact_address: string
+contact_form_msg: string
+
+// Venues
+site_location_capacities: string      // JSON object {venue: capacity}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Image Optimization">
+    - Compress images before upload
+    - Use appropriate dimensions: Banner (1920x400px), Logos (200x80px)
+    - Convert to WebP or optimized JPEG/PNG
+    - Stay well under file size limits to avoid localStorage issues
+  </Accordion>
+
+  <Accordion title="Color Accessibility">
+    - Ensure sufficient contrast between text and background (WCAG AA minimum 4.5:1)
+    - Test color combinations with accessibility tools
+    - Avoid pure black (#000000) and pure white (#FFFFFF)
+    - Consider color blindness when selecting palettes
+  </Accordion>
+
+  <Accordion title="Content Guidelines">
+    - Keep hero titles concise (under 50 characters)
+    - Write descriptive button text (avoid generic "Click Here")
+    - Proofread all custom content before saving
+    - Maintain consistent tone across all page descriptions
+  </Accordion>
+
+  <Accordion title="Testing">
+    - Preview changes in multiple browsers
+    - Test responsive layout on mobile devices
+    - Verify all images load correctly
+    - Check that custom colors work with both light and dark mode (if implemented)
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Images not loading after upload">
+    This usually indicates the image exceeded localStorage limits. Try:
+    - Compressing the image further
+    - Using a smaller resolution
+    - Converting to a more efficient format (WebP)
+    - Checking browser console for quota errors
+  </Accordion>
+
+  <Accordion title="Colors not applying">
+    Ensure you clicked the Save button and that CSS variables are properly defined. Some browsers cache CSS aggressively - try a hard refresh (Ctrl+Shift+R).
+  </Accordion>
+
+  <Accordion title="Changes disappear after refresh">
+    Check that JavaScript is enabled and localStorage is not disabled. Some privacy modes or extensions block localStorage access.
+  </Accordion>
+
+  <Accordion title="Reset doesn't work">
+    If the reset button doesn't restore defaults, manually clear localStorage via browser DevTools:
+    ```javascript
+    // In browser console
+    localStorage.removeItem('site_banner')
+    localStorage.removeItem('custom_bg_color')
+    // ... etc
+    ```
+  </Accordion>
+</AccordionGroup>

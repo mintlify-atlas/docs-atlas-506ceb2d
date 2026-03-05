@@ -1,0 +1,178 @@
+---
+title: 'Register User'
+description: 'Register a new user and create their profile'
+api: 'POST /register'
+---
+
+## Endpoint
+
+```
+POST /register
+```
+
+Registers a new user in the CONIITI 2026 system. This endpoint creates both an authentication user in Supabase Auth and a profile in the database.
+
+<Note>
+This is a public endpoint and does not require authentication.
+</Note>
+
+## Request Body
+
+<ParamField body="fullName" type="string" required>
+  The user's full name
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  The user's email address. Must be unique and valid.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The user's password for authentication
+</ParamField>
+
+<ParamField body="rol" type="string" default="USER">
+  The user's role in the system. Common values:
+  - `ESTUDIANTE` - Student (requires institutionalCode)
+  - `USER` - Default user role
+</ParamField>
+
+<ParamField body="career" type="string">
+  The user's academic career or program
+</ParamField>
+
+<ParamField body="gender" type="string">
+  The user's gender
+</ParamField>
+
+<ParamField body="documentNumber" type="string">
+  The user's identification document number. Must be unique across all users.
+</ParamField>
+
+<ParamField body="institutionalCode" type="string">
+  The institutional code. Required if `rol` is `ESTUDIANTE`. Must be unique across all students.
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message confirming user and profile creation
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  The created user object
+  
+  <ResponseField name="user.id" type="string">
+    The unique user ID (UUID from Supabase Auth)
+  </ResponseField>
+  
+  <ResponseField name="user.email" type="string">
+    The user's email address
+  </ResponseField>
+  
+  <ResponseField name="user.fullName" type="string">
+    The user's full name
+  </ResponseField>
+</ResponseField>
+
+## Examples
+
+### Request
+
+```bash cURL
+curl -X POST https://api.coniiti2026.com/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullName": "Juan Pérez García",
+    "email": "juan.perez@universidad.edu",
+    "password": "SecurePassword123!",
+    "rol": "ESTUDIANTE",
+    "career": "Ingeniería de Sistemas",
+    "gender": "Masculino",
+    "documentNumber": "12345678",
+    "institutionalCode": "2021100123"
+  }'
+```
+
+### Success Response (201)
+
+```json
+{
+  "message": "Usuario y perfil creados correctamente",
+  "user": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "email": "juan.perez@universidad.edu",
+    "fullName": "Juan Pérez García"
+  }
+}
+```
+
+## Error Responses
+
+### Document Number Already Exists (400)
+
+```json
+{
+  "error": "El número de documento ya se encuentra registrado."
+}
+```
+
+### Institutional Code Already Exists (400)
+
+Only applies when `rol` is `ESTUDIANTE`:
+
+```json
+{
+  "error": "El código institucional ya se encuentra registrado por otro estudiante."
+}
+```
+
+### Supabase Auth Error (400)
+
+```json
+{
+  "error": "User already registered"
+}
+```
+
+or
+
+```json
+{
+  "error": "No se pudo crear el usuario en Auth"
+}
+```
+
+### Profile Creation Error (400)
+
+```json
+{
+  "error": "Error al crear el perfil: [detailed error message]"
+}
+```
+
+<Note>
+If profile creation fails after the auth user is created, the system automatically deletes the auth user to maintain data consistency. This allows users to retry registration.
+</Note>
+
+### Internal Server Error (500)
+
+```json
+{
+  "error": "Error interno del servidor"
+}
+```
+
+## Validation Rules
+
+1. **Email**: Must be unique and valid format
+2. **Document Number**: Must be unique if provided
+3. **Institutional Code**: Must be unique for students (when `rol` is `ESTUDIANTE`)
+4. **Password**: Must meet Supabase password requirements
+
+## Implementation Notes
+
+- The endpoint creates a transactional flow: first creates the auth user, then the profile
+- If profile creation fails, the auth user is automatically rolled back
+- The `rol` field defaults to `USER` if not provided
+- Students (`ESTUDIANTE` role) must provide an institutional code
+- All profile data is stored in the `perfil_usuario` table

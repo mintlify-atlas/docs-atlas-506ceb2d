@@ -1,0 +1,326 @@
+---
+title: Environment Setup
+description: Configure environment variables for CONIITI 2026 production deployment
+---
+
+CONIITI 2026 requires specific environment variables for both backend and frontend services to connect to Supabase and communicate with each other.
+
+## Environment Variables Overview
+
+The application uses different environment variables for backend and frontend:
+
+- **Backend**: Node.js environment variables (loaded via `dotenv`)
+- **Frontend**: Vite environment variables (prefixed with `VITE_`)
+
+## Backend Environment Variables
+
+### Required Variables
+
+These variables must be set in the Render backend service configuration:
+
+| Variable | Type | Description | Example |
+|----------|------|-------------|----------|
+| `NODE_VERSION` | String | Node.js runtime version | `18.20.4` |
+| `PORT` | Number | Server port (Render default) | `10000` |
+| `SUPABASE_URL` | String | Supabase project URL | `https://xxxxx.supabase.co` |
+| `SUPABASE_ANON_KEY` | Secret | Supabase anonymous/public key | `eyJhbGc...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Secret | Supabase service role key (admin) | `eyJhbGc...` |
+
+### Variable Usage
+
+#### SUPABASE_URL
+
+Used by both Supabase clients (`supabase.ts:7,13`):
+
+```typescript
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+)
+```
+
+#### SUPABASE_ANON_KEY
+
+Public client key for standard operations (read, insert, update):
+- User queries (`usuario.service.ts`)
+- Event queries (`evento.service.ts`)
+- Presentation queries (`ponencia.service.ts`)
+- Registration queries (`inscripcion.service.ts`)
+- Speaker queries (`ponente.service.ts`)
+
+#### SUPABASE_SERVICE_ROLE_KEY
+
+Admin client key for privileged operations:
+- User creation via Auth API (`usuario.controller.ts:41`)
+- User management and deletion (`usuario.controller.ts:68`)
+- Token verification in middleware (`auth.middleware.ts:18`)
+- Row-level security bypass for admin operations
+
+<Warning>
+The `SUPABASE_SERVICE_ROLE_KEY` has full database access and bypasses all Row Level Security policies. Keep it secret and only use it on the backend.
+</Warning>
+
+#### PORT
+
+Server listening port, defaults to 3000 locally:
+
+```typescript
+const PORT = process.env.PORT || 3000
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en: http://localhost:${PORT}`)
+})
+```
+
+Render automatically sets this to `10000`.
+
+### Configuration in Render
+
+<Steps>
+
+<Step title="Navigate to Backend Service">
+In Render dashboard, select the `coniiti-2026-backend` service.
+</Step>
+
+<Step title="Access Environment Variables">
+Go to "Environment" tab in the service settings.
+</Step>
+
+<Step title="Add Supabase Variables">
+Add the following secret variables:
+
+```bash
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+<Note>
+Mark these as "secret" to prevent them from appearing in logs.
+</Note>
+</Step>
+
+<Step title="Get Supabase Keys">
+Retrieve keys from Supabase dashboard:
+1. Go to Project Settings > API
+2. Copy `URL` for `SUPABASE_URL`
+3. Copy `anon public` key for `SUPABASE_ANON_KEY`
+4. Copy `service_role` key for `SUPABASE_SERVICE_ROLE_KEY`
+</Step>
+
+</Steps>
+
+## Frontend Environment Variables
+
+### Required Variables
+
+These variables must be set in the Render frontend service configuration:
+
+| Variable | Type | Description | Example |
+|----------|------|-------------|----------|
+| `VITE_API_URL` | String | Backend API base URL | `https://coniiti-2026-backend.onrender.com/api` |
+| `VITE_SUPABASE_URL` | String | Supabase project URL | `https://xxxxx.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Secret | Supabase anonymous key | `eyJhbGc...` |
+
+### Variable Usage
+
+These variables are accessed via `import.meta.env` in the frontend code (`api.ts:3-4,8`):
+
+```typescript
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+```
+
+#### VITE_API_URL
+
+Base URL for all backend API requests. Must point to the deployed backend service on Render.
+
+#### VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY
+
+Used for direct client-side Supabase operations:
+- Authentication flows
+- Real-time subscriptions
+- Direct database queries (if any)
+
+<Note>
+Vite only exposes environment variables prefixed with `VITE_` to the client bundle. This prevents accidentally leaking sensitive server-side secrets.
+</Note>
+
+### Configuration in Render
+
+<Steps>
+
+<Step title="Navigate to Frontend Service">
+In Render dashboard, select the `coniiti-2026-frontend` service.
+</Step>
+
+<Step title="Verify Pre-configured Variables">
+The `VITE_API_URL` is already set in `render.yaml`:
+
+```yaml
+envVars:
+  - key: VITE_API_URL
+    value: https://coniiti-2026-backend.onrender.com/api
+```
+</Step>
+
+<Step title="Add Supabase Variables">
+Add the Supabase variables as secrets:
+
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+</Step>
+
+<Step title="Rebuild Frontend">
+After adding variables, trigger a manual deploy to rebuild with the new environment variables.
+</Step>
+
+</Steps>
+
+## Local Development Setup
+
+For local development, create environment files:
+
+### Backend `.env`
+
+Create `backend/.env`:
+
+```bash
+# Server Configuration
+PORT=3000
+NODE_VERSION=18.20.4
+
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+<Note>
+The backend uses `dotenv` to load environment variables from `.env` file (`server.ts:1`).
+</Note>
+
+### Frontend `.env`
+
+Create `frontend/vite-project/.env`:
+
+```bash
+# Backend API
+VITE_API_URL=http://localhost:3000/api
+
+# Supabase Configuration
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+<Warning>
+Never commit `.env` files to version control. Add them to `.gitignore`.
+</Warning>
+
+## Environment Variable Checklist
+
+Use this checklist to verify all required variables are set:
+
+### Backend
+
+- [ ] `NODE_VERSION` - Set in `render.yaml`
+- [ ] `PORT` - Set in `render.yaml`
+- [ ] `SUPABASE_URL` - Added as secret in Render
+- [ ] `SUPABASE_ANON_KEY` - Added as secret in Render
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` - Added as secret in Render
+
+### Frontend
+
+- [ ] `VITE_API_URL` - Set in `render.yaml` (points to backend)
+- [ ] `VITE_SUPABASE_URL` - Added as secret in Render
+- [ ] `VITE_SUPABASE_ANON_KEY` - Added as secret in Render
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+
+<Card title="Secret Management" icon="key">
+- Mark sensitive variables as "secret" in Render
+- Never log or expose secrets in error messages
+- Rotate keys periodically
+- Use different keys for staging and production
+</Card>
+
+<Card title="Service Role Key" icon="shield">
+- Only use on backend, never frontend
+- Restrict to privileged operations only
+- Monitor usage in Supabase logs
+- Consider implementing additional authorization checks
+</Card>
+
+<Card title="CORS Configuration" icon="globe">
+- Backend uses `cors()` middleware for cross-origin requests
+- Update CORS settings if frontend domain changes
+- Restrict to specific origins in production
+</Card>
+
+<Card title="Environment Isolation" icon="server">
+- Use separate Supabase projects for dev/staging/prod
+- Never use production keys in local development
+- Test with staging environment before production
+</Card>
+
+</CardGroup>
+
+## Troubleshooting
+
+### Backend Can't Connect to Supabase
+
+**Error**: `Invalid Supabase URL` or `Invalid API key`
+
+**Solutions**:
+- Verify `SUPABASE_URL` format (should start with `https://`)
+- Check keys are copied correctly without extra spaces
+- Ensure keys match the Supabase project
+- Confirm project is not paused in Supabase
+
+### Frontend Can't Reach Backend
+
+**Error**: `Network Error` or `CORS Error`
+
+**Solutions**:
+- Verify `VITE_API_URL` points to correct backend URL
+- Check backend service is running and healthy
+- Ensure CORS is enabled in backend (`app.ts:13`)
+- Rebuild frontend after changing `VITE_API_URL`
+
+### Environment Variables Not Loading
+
+**Symptoms**: Variables are `undefined` at runtime
+
+**Solutions**:
+- **Backend**: Ensure `import 'dotenv/config'` is first import
+- **Frontend**: Verify variables are prefixed with `VITE_`
+- Rebuild services after adding new variables
+- Check for typos in variable names
+
+### Service Role Key Fallback
+
+**Warning**: `admin_supabase` falling back to anon key
+
+**Solution**:
+Add `SUPABASE_SERVICE_ROLE_KEY` to backend environment. The code falls back to anon key (`supabase.ts:14`):
+
+```typescript
+export const admin_supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+)
+```
+
+This fallback will cause permission errors for admin operations.
+
+## Next Steps
+
+- [Render Deployment](/development/deployment/render-deployment) - Deploy services to Render.com
+- [Supabase Integration](/development/supabase/overview) - Configure database and authentication
+- [API Reference](/api-reference/introduction) - Explore available API endpoints

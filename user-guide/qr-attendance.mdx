@@ -1,0 +1,439 @@
+---
+title: QR Code Attendance
+description: How to use QR codes to confirm your attendance at in-person conferences
+---
+
+# QR Code Attendance
+
+CONIITI 2026 uses QR code technology to track attendance at in-person conferences and generate attendance certificates. This guide explains how to scan QR codes and verify your participation.
+
+## Why QR Code Attendance?
+
+QR code scanning provides:
+- ✅ **Instant verification**: Confirm your attendance in seconds
+- 📜 **Certificate eligibility**: Attendance records enable certificate generation
+- 📊 **Accurate tracking**: Helps organizers understand conference participation
+- 🎯 **Proof of completion**: Documented evidence of your conference participation
+
+<Note>
+  QR code scanning is **only required for in-person conferences** (📍 Presencial). Virtual conferences (🌐 Virtual) are tracked automatically through the online platform.
+</Note>
+
+---
+
+## Prerequisites
+
+Before scanning QR codes:
+
+1. **Active Enrollment**: You must be enrolled in the conference (see [Conference Enrollment](/user-guide/conference-enrollment))
+2. **Physical Presence**: Attend the conference in person
+3. **Logged In**: Be signed into your CONIITI 2026 account
+4. **Camera Access**: Grant your browser permission to use your device's camera
+
+---
+
+## Accessing the QR Scanner
+
+<Steps>
+  <Step title="Open Your Profile">
+    Navigate to your profile page at `/perfil` or click your profile link in the navigation menu.
+    
+    <Note>
+      You must be logged in to access the QR scanner. If you're not authenticated, you'll be redirected to the login page.
+    </Note>
+  </Step>
+
+  <Step title="Locate Scanner Button">
+    In the **"Mis Conferencias Inscritas"** (My Enrolled Conferences) section, find the button:
+    
+    **📷 Escanear QR Asistencia** (Scan Attendance QR)
+    
+    This button is located in the top-right area of the enrolled conferences section.
+  </Step>
+
+  <Step title="Open Scanner">
+    Click the **"📷 Escanear QR Asistencia"** button to launch the QR code scanner.
+    
+    <Tip>
+      The scanner opens in a modal overlay, so you can easily close it if needed without losing your place.
+    </Tip>
+  </Step>
+</Steps>
+
+---
+
+## Scanning a QR Code
+
+Once the scanner is open:
+
+<Steps>
+  <Step title="Grant Camera Permission">
+    Your browser will request permission to access your camera:
+    - Click **"Allow"** or **"Permitir"**
+    - This permission is only for the CONIITI website
+    - You can revoke it later in your browser settings
+
+    <Note>
+      If you previously denied camera access, you'll need to manually enable it in your browser settings:
+      - **Chrome/Edge**: Click the padlock icon in the address bar → Site settings → Camera → Allow
+      - **Firefox**: Click the shield icon → Permissions → Camera → Allow
+      - **Safari**: Safari → Settings → Websites → Camera → Allow for this website
+    </Note>
+  </Step>
+
+  <Step title="Position Your Camera">
+    The scanner displays a live camera view:
+    - Hold your device steady
+    - Position the camera so the QR code fits within the view
+    - Ensure good lighting for best results
+    - The QR code will be automatically detected when in focus
+
+    <Tip>
+      Keep your device at a comfortable distance (15-30 cm from the QR code) for optimal scanning.
+    </Tip>
+  </Step>
+
+  <Step title="Align with QR Code">
+    Point your camera at the conference attendance QR code:
+    - The QR code is typically displayed:
+      - On screens at the conference venue
+      - On printed posters at the entrance
+      - On the speaker's presentation slides
+    - Center the QR code in your camera view
+
+    <Note>
+      Each conference has a unique QR code. Make sure you're scanning the code for the correct conference!
+    </Note>
+  </Step>
+
+  <Step title="Automatic Detection">
+    The scanner automatically detects and processes the QR code:
+    - No need to press any buttons
+    - Processing happens instantly upon detection
+    - The scanner validates the code against your enrollments
+
+    <Tip>
+      If the scan doesn't work immediately, try adjusting your angle or moving slightly closer/farther from the code.
+    </Tip>
+  </Step>
+</Steps>
+
+---
+
+## After Scanning
+
+### Successful Scan
+
+When you successfully scan an attendance QR code:
+
+1. **Scanner Closes**: The QR scanner modal automatically closes
+2. **Success Message**: You'll see a confirmation message:
+   - "¡Asistencia registrada con éxito! Ya puedes ver tu certificado en el historial."
+   - (Attendance successfully registered! You can now view your certificate in history.)
+   - Message displayed with a **green background**
+3. **Automatic Update**: The scanned conference moves from "Enrolled" to "Attendance History"
+4. **Page Refresh**: Your profile updates in real-time
+
+<Note>
+  The success message disappears automatically after 4 seconds, or you can continue using your profile immediately.
+</Note>
+
+### Invalid QR Code
+
+If you scan an invalid or unrecognized QR code:
+
+1. **Scanner Closes**: The scanner automatically closes
+2. **Error Message**: You'll see:
+   - "Código QR no válido para asistencia."
+   - (QR code not valid for attendance.)
+   - Message displayed with a **red background**
+3. **No Changes**: Your enrollment status remains unchanged
+
+**Common reasons for invalid codes:**
+- QR code is not a CONIITI attendance code
+- QR code is for a different conference
+- QR code is expired or inactive
+- QR code format is incorrect
+
+<Tip>
+  If you consistently get invalid code errors, verify with event staff that you're scanning the correct conference's QR code.
+</Tip>
+
+---
+
+## Viewing Confirmed Attendance
+
+After successfully scanning a QR code, the conference appears in your attendance history:
+
+### Location
+
+Scroll down on your profile page to:
+
+**🎓 Certificados de Asistencia (Historial)**  
+(Attendance Certificates - History)
+
+### What You'll See
+
+Each confirmed conference displays:
+- ✅ **Green checkmark icon**: Visual confirmation indicator
+- **Conference title**: In green text
+- **Date and time**: When the conference took place
+- **Location**: Where the conference was held
+- **Status**: "Confirmada presencialmente por Escáner QR" (Confirmed in person via QR Scanner)
+- **Completion badge**: Green "COMPLETADO" (COMPLETED) label
+- **Enhanced styling**: Green left border and light green background
+
+<Note>
+  Conferences in the attendance history have been permanently recorded. This data is used to generate your participation certificate for CONIITI 2026.
+</Note>
+
+---
+
+## Understanding QR Code Format
+
+For technical reference, CONIITI attendance QR codes follow this format:
+
+```
+CONF_ATTENDANCE_[conference_id]
+```
+
+For example:
+- `CONF_ATTENDANCE_1`
+- `CONF_ATTENDANCE_42`
+- `CONF_ATTENDANCE_305`
+
+<Note>
+  The system automatically validates that:
+  - The QR code format is correct
+  - The conference ID matches one of your enrollments
+  - You haven't already scanned this code
+</Note>
+
+---
+
+## Attendance History Management
+
+### Viewing Your History
+
+Your attendance history section shows:
+- **All successfully scanned conferences**: In chronological order
+- **Permanent records**: Cannot be deleted or modified
+- **Complete details**: Title, date, time, location, and confirmation status
+
+### Empty History
+
+If you see:
+- "Todavía no has asistido a ninguna conferencia."
+- (You haven't attended any conferences yet.)
+
+This means you haven't scanned any QR codes yet. Enroll in conferences and scan the QR codes at the events to build your attendance record.
+
+### Data Persistence
+
+Your attendance records are:
+- **Stored permanently** on the server
+- **Synced across devices** when you log in
+- **Available offline** for viewing
+- **Used for certificate generation** at the end of CONIITI 2026
+
+---
+
+## Troubleshooting
+
+### Scanner Won't Open
+
+**Problem**: Clicking the scan button doesn't open the scanner
+
+**Solutions**:
+1. Verify you're logged in
+2. Refresh the page and try again
+3. Clear your browser cache
+4. Try a different browser
+
+### Camera Not Working
+
+**Problem**: Black screen or "No camera access" message
+
+**Solutions**:
+1. **Check browser permissions**: Allow camera access in site settings
+2. **Check device permissions**: Ensure your OS allows the browser to use the camera
+3. **Close other apps**: Other applications using the camera may block access
+4. **Try another device**: Use a different phone or tablet
+5. **Check camera hardware**: Test your camera in another app to ensure it works
+
+### QR Code Won't Scan
+
+**Problem**: Scanner doesn't detect the QR code
+
+**Solutions**:
+1. **Improve lighting**: Ensure the QR code is well-lit
+2. **Reduce glare**: Avoid reflections on screens or laminated prints
+3. **Adjust distance**: Move closer or farther from the code
+4. **Hold steady**: Keep your device still while scanning
+5. **Clean camera lens**: Wipe your camera lens if it's dirty
+6. **Check QR code quality**: Ensure the code isn't damaged or blurry
+
+### Wrong Conference Recorded
+
+**Problem**: Scanned the wrong conference's QR code
+
+**Solution**: 
+- Contact event organizers immediately
+- Provide your email and the conference details
+- Staff can manually adjust attendance records
+
+<Note>
+  Be careful to scan only the QR code for the conference you're currently attending!
+</Note>
+
+### Attendance Not Showing
+
+**Problem**: Scanned successfully but conference doesn't appear in history
+
+**Solutions**:
+1. Wait a few moments - updates may take time
+2. Refresh your profile page
+3. Log out and log back in
+4. Check if you're logged into the correct account
+5. Contact support if the issue persists
+
+---
+
+## Canceling the Scanner
+
+If you need to close the scanner without scanning:
+
+1. Click the **"Cancelar"** (Cancel) button at the bottom of the scanner modal
+2. The scanner closes and returns you to your profile
+3. No changes are made to your attendance records
+
+<Tip>
+  You can open and close the scanner as many times as needed without any penalty.
+</Tip>
+
+---
+
+## Best Practices
+
+### When to Scan
+
+- ✅ **Scan at the event**: Ideally at the start or end of the conference
+- ✅ **Scan while present**: Only scan when physically attending
+- ✅ **Scan once**: Each conference only needs to be scanned once
+- ❌ **Don't scan remotely**: Don't scan QR codes from photos or screenshots
+- ❌ **Don't scan for others**: Each attendee must scan their own code
+
+### Technical Tips
+
+- Keep your device charged or bring a power bank
+- Ensure your browser is up to date
+- Test the scanner before the first conference
+- Screenshot your enrolled conferences for offline reference
+
+### Privacy Considerations
+
+- Camera access is only used for QR scanning
+- No photos or videos are recorded or stored
+- Camera permission is specific to the CONIITI website
+- You can revoke camera access anytime in browser settings
+
+---
+
+## Attendance and Certificates
+
+Your scanned attendance records determine:
+
+### Certificate Eligibility
+- **Participation certificate**: Issued based on total conferences attended
+- **Individual conference certificates**: Generated for each confirmed attendance
+- **Course completion**: May require minimum attendance threshold
+
+### How Certificates Are Generated
+
+At the end of CONIITI 2026:
+1. Organizers review all attendance records
+2. Certificates are automatically generated
+3. Certificates include:
+   - Your name and ID
+   - Conferences attended
+   - Total participation hours
+   - Official CONIITI seal
+4. Certificates are available for download in your profile
+
+<Note>
+  Certificate generation typically occurs 1-2 weeks after the event concludes. You'll be notified via email when certificates are ready.
+</Note>
+
+---
+
+## Browser Compatibility
+
+The QR scanner works on modern browsers with camera support:
+
+### Supported Browsers
+- ✅ Chrome 53+ (Desktop and Mobile)
+- ✅ Firefox 36+ (Desktop and Mobile)
+- ✅ Safari 11+ (iOS and macOS)
+- ✅ Edge 79+ (Desktop and Mobile)
+- ✅ Opera 40+
+
+### Device Compatibility
+- ✅ **Android**: Android 7.0+ with supported browser
+- ✅ **iOS**: iOS 11+ with Safari or Chrome
+- ✅ **Desktop**: Computers with webcam
+- ⚠️ **Tablets**: Most modern tablets work well
+
+<Tip>
+  For best results, use a smartphone - they typically have better cameras and are easier to position for scanning.
+</Tip>
+
+---
+
+## Technical Requirements
+
+### Device Requirements
+- **Camera**: Functional front or rear camera
+- **Screen**: Minimum 320px width display
+- **Network**: Internet connection (for initial load and attendance submission)
+- **Browser**: Modern browser with camera API support
+
+### Permissions Required
+- **Camera access**: Required for QR scanning
+- **Local storage**: For offline functionality
+- **JavaScript**: Must be enabled
+
+---
+
+## Need Help?
+
+For QR scanning assistance:
+
+### During the Event
+- **On-site support**: Event staff can help with scanning issues
+- **Registration desk**: Visit for manual attendance recording
+- **Technical support booth**: Available for device troubleshooting
+
+### Remote Support
+- **Email**: coniiti@ucatolica.edu.co
+- **Phone**: +57 (601) 327 7300
+- **Include in your message**:
+  - Your registered email
+  - Conference name and time
+  - Description of the issue
+  - Screenshots if applicable
+
+---
+
+## Important Reminders
+
+<Note>
+  - QR code scanning is **only for in-person conferences**
+  - Virtual conferences don't require QR scanning
+  - Each conference can only be scanned once per user
+  - Attendance records are permanent and cannot be deleted
+  - Only scan QR codes while physically present at the event
+</Note>
+
+<Tip>
+  Test the QR scanner before attending your first conference to ensure your camera works properly and you're familiar with the process!
+</Tip>

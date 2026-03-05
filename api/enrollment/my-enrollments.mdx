@@ -1,0 +1,142 @@
+---
+title: 'Get My Enrollments'
+api: 'GET /api/inscripciones/mis-inscripciones'
+description: 'Retrieve all enrollments for the authenticated user'
+---
+
+This endpoint returns a list of all presentations the authenticated user has enrolled in, including complete presentation details.
+
+## Authentication
+
+This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+
+```
+Authorization: Bearer <token>
+```
+
+## Response
+
+Returns an array of enrollment objects, each containing the enrollment details and the associated presentation information.
+
+<ResponseField name="id" type="string">
+  Unique identifier for the enrollment record
+</ResponseField>
+
+<ResponseField name="usuario_id" type="string">
+  ID of the enrolled user
+</ResponseField>
+
+<ResponseField name="ponencia_id" type="string">
+  ID of the presentation
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the enrollment was created
+</ResponseField>
+
+<ResponseField name="ponencia" type="object">
+  Complete presentation details
+  
+  <Expandable title="ponencia properties">
+    <ResponseField name="id" type="string">
+      Unique identifier for the presentation
+    </ResponseField>
+    
+    <ResponseField name="titulo" type="string">
+      Title of the presentation
+    </ResponseField>
+    
+    <ResponseField name="descripcion" type="string">
+      Description of the presentation
+    </ResponseField>
+    
+    <ResponseField name="fecha" type="string">
+      Date of the presentation
+    </ResponseField>
+    
+    <ResponseField name="hora_inicio" type="string">
+      Start time of the presentation
+    </ResponseField>
+    
+    <ResponseField name="hora_fin" type="string">
+      End time of the presentation
+    </ResponseField>
+    
+    <ResponseField name="sala_id" type="string">
+      ID of the room where the presentation will take place
+    </ResponseField>
+    
+    <ResponseField name="dia_evento_id" type="string">
+      ID of the event day
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.coniiti.com/api/inscripciones/mis-inscripciones \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+## Example Response
+
+<CodeGroup>
+
+```json 200 - Success
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "usuario_id": "987e6543-e21b-12d3-a456-426614174001",
+    "ponencia_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2026-03-05T10:30:00.000Z",
+    "ponencia": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "titulo": "Inteligencia Artificial en la Industria 4.0",
+      "descripcion": "Explorando las aplicaciones de IA en manufactura moderna",
+      "fecha": "2026-11-15",
+      "hora_inicio": "10:00:00",
+      "hora_fin": "11:30:00",
+      "sala_id": "abc-123",
+      "dia_evento_id": "def-456"
+    }
+  },
+  {
+    "id": "223e4567-e89b-12d3-a456-426614174002",
+    "usuario_id": "987e6543-e21b-12d3-a456-426614174001",
+    "ponencia_id": "650e8400-e29b-41d4-a716-446655440001",
+    "created_at": "2026-03-05T11:15:00.000Z",
+    "ponencia": {
+      "id": "650e8400-e29b-41d4-a716-446655440001",
+      "titulo": "Desarrollo Sostenible en Ingeniería",
+      "descripcion": "Prácticas sustentables para proyectos de ingeniería",
+      "fecha": "2026-11-16",
+      "hora_inicio": "14:00:00",
+      "hora_fin": "15:30:00",
+      "sala_id": "abc-124",
+      "dia_evento_id": "def-457"
+    }
+  }
+]
+```
+
+```json 400 - Error
+{
+  "error": "Error message describing what went wrong"
+}
+```
+
+```json 401 - Unauthorized
+{
+  "error": "Unauthorized access"
+}
+```
+
+</CodeGroup>
+
+## Notes
+
+- The endpoint automatically filters enrollments based on the authenticated user's ID
+- Each enrollment includes the full presentation details through the nested `ponencia` object
+- Returns an empty array `[]` if the user has no enrollments
+- The results are not paginated and return all enrollments for the user

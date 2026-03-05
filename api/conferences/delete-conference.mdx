@@ -1,0 +1,188 @@
+---
+title: 'Delete Conference'
+api: 'DELETE /api/ponencias/{id}'
+description: 'Delete a conference (ponencia) from the CONIITI 2026 system'
+---
+
+## Overview
+
+This endpoint permanently deletes a conference identified by its ID. Authentication is required to use this endpoint.
+
+<Warning>
+  This action is irreversible. Once a conference is deleted, it cannot be recovered. Ensure you have proper confirmation before executing this operation.
+</Warning>
+
+## Request
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the conference to delete
+</ParamField>
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication
+</ParamField>
+
+## Response
+
+On successful deletion, this endpoint returns a `204 No Content` status with an empty response body.
+
+## Response Codes
+
+<ResponseField name="204" type="No Content">
+  Conference deleted successfully (empty response body)
+</ResponseField>
+
+<ResponseField name="400" type="Bad Request">
+  Invalid request or database error
+  
+  <Expandable title="Error Response">
+    <ResponseField name="error" type="string">
+      Error message describing what went wrong (e.g., conference not found, foreign key constraint violation)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Authentication required - Missing or invalid authentication token
+</ResponseField>
+
+<ResponseField name="403" type="Forbidden">
+  Permission denied - User lacks permission to delete conferences
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE https://api.coniiti2026.com/api/ponencias/987e6543-e21b-34d5-c678-426614174111 \
+  -H "Authorization: Bearer YOUR_AUTH_TOKEN"
+```
+
+```javascript JavaScript
+const conferenceId = '987e6543-e21b-34d5-c678-426614174111';
+
+const response = await fetch(`https://api.coniiti2026.com/api/ponencias/${conferenceId}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_AUTH_TOKEN'
+  }
+});
+
+if (response.status === 204) {
+  console.log('Conference deleted successfully');
+} else {
+  const error = await response.json();
+  console.error('Error:', error);
+}
+```
+
+```python Python
+import requests
+
+conference_id = '987e6543-e21b-34d5-c678-426614174111'
+
+headers = {
+    'Authorization': 'Bearer YOUR_AUTH_TOKEN'
+}
+
+response = requests.delete(
+    f'https://api.coniiti2026.com/api/ponencias/{conference_id}',
+    headers=headers
+)
+
+if response.status_code == 204:
+    print('Conference deleted successfully')
+else:
+    print('Error:', response.json())
+```
+
+</CodeGroup>
+
+## Example Response
+
+### Success (204 No Content)
+
+No response body is returned on successful deletion.
+
+### Error (400 Bad Request)
+
+```json
+{
+  "error": "Conference with id '987e6543-e21b-34d5-c678-426614174111' not found"
+}
+```
+
+## Error Examples
+
+### Conference Not Found
+
+```json
+{
+  "error": "No rows deleted. Conference with id '123' does not exist."
+}
+```
+
+### Foreign Key Constraint Violation
+
+<Info>
+  If the conference has related records (e.g., speaker assignments via ponencia_ponente), the deletion might fail due to foreign key constraints depending on your database configuration.
+</Info>
+
+```json
+{
+  "error": "Cannot delete conference. Foreign key constraint violation: related records exist in ponencia_ponente table."
+}
+```
+
+### Insufficient Permissions
+
+```json
+{
+  "error": "Insufficient permissions to delete conferences"
+}
+```
+
+## Important Considerations
+
+<Warning>
+  **Cascading Effects**: Deleting a conference may affect related data:
+  - Speaker assignments (ponencia_ponente relationships)
+  - User registrations or attendance records
+  - Schedule conflicts resolution
+  
+  Ensure you understand the database foreign key constraints and cascading rules before deleting.
+</Warning>
+
+<Tip>
+  **Best Practices**:
+  - Implement a soft delete mechanism (marking records as inactive) instead of hard deletes for production systems
+  - Require additional confirmation for delete operations in your UI
+  - Log all delete operations for audit purposes
+  - Consider archiving conference data before deletion
+  - Verify that the conference hasn't started before allowing deletion
+</Tip>
+
+## Alternative Approach
+
+Instead of deleting a conference, consider updating it to mark it as cancelled:
+
+```javascript
+// Instead of DELETE, use PUT with a status field
+const response = await fetch(`https://api.coniiti2026.com/api/ponencias/${conferenceId}`, {
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer YOUR_AUTH_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    estado: 'cancelado'
+  })
+});
+```
+
+This approach preserves historical data while indicating the conference is no longer active.

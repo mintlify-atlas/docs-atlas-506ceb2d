@@ -1,0 +1,545 @@
+---
+title: Managing Conferences
+description: Complete guide to creating, editing, and managing conference sessions in the CONIITI 2026 schedule
+---
+
+## Conference Management
+
+The conference management system provides comprehensive tools for scheduling talks, assigning speakers, managing venues, and organizing the event agenda.
+
+## Accessing Conference Management
+
+Navigate to **📅 Agenda / Conferencias** in the admin sidebar to manage all conference sessions.
+
+## Conference List View
+
+The main conference view displays all scheduled sessions in a table:
+
+| Column | Description |
+|--------|-------------|
+| **Título** | Conference session title |
+| **Ponente** | Assigned speaker name |
+| **Ubicación** | Venue/auditorium location |
+| **Acciones** | Edit, QR Code, Delete buttons |
+
+<Note>
+VIEWER role cannot see the Actions column. Only users with ADMIN, CONTENT_MANAGER, or SUPER_ADMIN roles can modify conferences.
+</Note>
+
+## Adding a New Conference
+
+<Steps>
+  <Step title="Open Conference Form">
+    Click **+ Añadir Nueva** button at the top of the Agenda section. This reveals a comprehensive form.
+  </Step>
+
+  <Step title="Enter Basic Information">
+    Fill in the required fields:
+    
+    ```tsx
+    // Required Fields:
+    - Título de la Conferencia
+    - Conferencista / Invitado (dropdown)
+    - Ubicación (Salón / Auditorio)
+    - Carrera Afín
+    - Día de la Conferencia
+    - Hora de Inicio / Finalización
+    - Descripción / Resumen
+    ```
+  </Step>
+
+  <Step title="Select Speaker">
+    Choose from existing speakers or add a new one:
+    
+    ```tsx
+    // Admin.tsx:671-686
+    <select
+        className="admin-select"
+        required
+        value={newConf.speakerName}
+        onChange={e => setNewConf({ ...newConf, speakerName: e.target.value })}
+    >
+        <option value="">-- Selecciona un invitado --</option>
+        {availableSpeakers.map((s, idx) => (
+            <option key={idx} value={s.name}>
+                {s.name} ({s.organization})
+            </option>
+        ))}
+        <option value="OTRO">+ Otro (Escribir nombre)</option>
+    </select>
+    ```
+    
+    <Info>
+    Selecting "OTRO" allows you to create a new speaker on-the-fly during conference creation.
+    </Info>
+  </Step>
+
+  <Step title="Configure Modality">
+    Select between **Presencial** or **Virtual**:
+    
+    - **Presencial**: Requires physical location selection
+    - **Virtual**: Requires meeting link (Zoom, Teams, etc.)
+    
+    ```tsx
+    {newConf.type === 'virtual' && (
+        <div className="form-group">
+            <label>Enlace de la Reunión (Virtual)</label>
+            <input
+                type="url"
+                placeholder="https://zoom.us/j/..."
+                value={newConf.virtualLink}
+                onChange={e => setNewConf({ ...newConf, virtualLink: e.target.value })}
+                required
+            />
+        </div>
+    )}
+    ```
+  </Step>
+
+  <Step title="Attach Resources (Optional)">
+    Add supporting materials:
+    
+    - **Enlace Externo**: URL to external resources
+    - **Cargar Archivo Local**: Upload PDF, slides, or documents
+    
+    ```typescript
+    // Admin.tsx:795-821
+    <div className="form-row">
+        <div className="form-group">
+            <label>🔗 Enlace Externo (Material)</label>
+            <input
+                type="text"
+                placeholder="https://ejemplo.com/recurso"
+                value={newConf.documentUrl}
+                onChange={e => setNewConf({ ...newConf, documentUrl: e.target.value })}
+            />
+        </div>
+        <div className="form-group">
+            <label>📁 Cargar Archivo Local</label>
+            <input
+                type="file"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            if (reader.result) 
+                                setNewConf({ ...newConf, documentFile: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }}
+            />
+        </div>
+    </div>
+    ```
+  </Step>
+
+  <Step title="Submit Conference">
+    Click **Publicar Conferencia** to save the session.
+  </Step>
+</Steps>
+
+## Conference Submission Flow
+
+```typescript
+// Admin.tsx:347-404
+const handleAddConference = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+        const { createPonencia } = await import("../services/api");
+
+        // Find or create speaker
+        let finalSpeaker = speakers.find(s => s.name === newConf.speakerName);
+
+        // Handle new speaker creation
+        if (newConf.speakerName === "OTRO") {
+            const { createPonente } = await import("../services/api");
+            const newSpeakerName = (window as any)._tempNewSpeaker || "Invitado Especial";
+            finalSpeaker = await createPonente({
+                nombre: newSpeakerName,
+                organizacion: "Invitado Externo",
+                bio: "Experto invitado",
+                avatar_url: "/default-avatar.png"
+            });
+        }
+
+        if (!finalSpeaker) throw new Error("Debes seleccionar un ponente válido");
+
+        const ponenciaData = {
+            titulo: newConf.title,
+            descripcion: newConf.description,
+            hora_inicio: newConf.startTime,
+            hora_fin: newConf.endTime,
+            sala_id: 1,
+            dia_id: parseInt(newConf.dayId.replace("day", "")) || 1,
+            dayId: newConf.dayId,
+            documentUrl: newConf.documentUrl,
+            documentFile: newConf.documentFile,
+            speaker: { 
+                name: finalSpeaker.name, 
+                organization: finalSpeaker.organization, 
+                avatar: "/default-avatar.png", 
+                bio: "" 
+            }
+        };
+
+        try {
+            await createPonencia(ponenciaData);
+        } catch (apiErr) {
+            console.warn("API fallida, guardando localmente:", apiErr);
+        }
+
+        // Update local state for immediate response
+        const updatedConfs = [...conferences, { ...ponenciaData, id: Date.now().toString() }];
+        setConferences(updatedConfs);
+        localStorage.setItem("site_conferences", JSON.stringify(updatedConfs));
+
+        setShowConfForm(false);
+        setNewConf({ ...newConf, title: "", description: "" });
+    } catch (err: any) {
+        console.error("Error saving conference:", err);
+    } finally {
+        setIsLoading(false);
+    }
+}
+```
+
+<Tip>
+The system attempts API persistence first, then falls back to localStorage if the API is unavailable. This ensures data isn't lost even during network issues.
+</Tip>
+
+## Editing a Conference
+
+<Steps>
+  <Step title="Open Edit Modal">
+    Click the **✏️ Editar** button on any conference row.
+  </Step>
+
+  <Step title="Modify Fields">
+    All conference fields can be updated:
+    - Title
+    - Speaker assignment
+    - Location
+    - Time slots
+    - Day
+    - Career affiliation
+    - Modality (presencial/virtual)
+    - Resources
+    - Description
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Guardar Cambios** to persist updates.
+    
+    ```typescript
+    // Admin.tsx:406-427
+    const handleSaveEdit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        try {
+            const updatedConfs = conferences.map((c: any) => 
+                c.id === editingConf.id ? editingConf : c
+            );
+            setConferences(updatedConfs);
+            localStorage.setItem("site_conferences", JSON.stringify(updatedConfs));
+
+            // Attempt API update if endpoint exists
+            try {
+                const { updatePonencia } = await import("../services/api");
+                if (updatePonencia) await updatePonencia(editingConf.id, editingConf);
+            } catch (apiErr) {
+                console.warn("API update failed, changes saved locally");
+            }
+
+            setEditingConf(null)
+            toast.success("Cambios guardados correctamente")
+        } catch (err) {
+            console.error("Error saving changes:", err);
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Deleting a Conference
+
+<Warning>
+Deleting a conference is permanent if API is available. Always confirm before deleting.
+</Warning>
+
+```typescript
+// Admin.tsx:245-257
+const handleDeleteConference = async (id: string) => {
+    if (!confirm("¿Estás seguro de eliminar esta conferencia?")) return;
+
+    try {
+        const { deletePonencia } = await import("../services/api");
+        await deletePonencia(id);
+        setConferences(conferences.filter((c: any) => c.id !== id));
+    } catch (err) {
+        console.error("Error deleting conference:", err);
+    }
+}
+```
+
+<Steps>
+  <Step title="Click Delete Button">
+    Click **🗑️ Borrar** on the conference row.
+  </Step>
+  
+  <Step title="Confirm Deletion">
+    Confirm the action in the browser prompt.
+  </Step>
+  
+  <Step title="Conference Removed">
+    The conference is deleted from both API and local state.
+  </Step>
+</Steps>
+
+## QR Code Generation
+
+Generate attendance tracking QR codes for any conference:
+
+<Steps>
+  <Step title="Open QR Modal">
+    Click **📷 QR** button on any conference.
+  </Step>
+
+  <Step title="View QR Code">
+    A modal displays a high-quality QR code encoded with:
+    ```
+    CONF_ATTENDANCE_{conferenceId}
+    ```
+  </Step>
+
+  <Step title="Download QR">
+    Click **⬇️ Descargar PNG** to save the QR code as an image:
+    
+    ```typescript
+    // Admin.tsx:432-453
+    const downloadQR = () => {
+        const svg = document.getElementById(`qr-code-svg-${qrModalConf?.id}`);
+        if (!svg) return;
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            if (ctx) {
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                const a = document.createElement("a");
+                a.download = `Asistencia-${qrModalConf?.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+                a.href = canvas.toDataURL("image/png");
+                a.click();
+            }
+        };
+        img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+    }
+    ```
+  </Step>
+</Steps>
+
+<Info>
+QR codes use error correction level "H" (high) for maximum reliability. The downloaded PNG includes a white background for printing.
+</Info>
+
+## Venue Management
+
+Configure auditorium capacities and locations in **⚙️ Configuración Página > 🏛️ Aforos y Sedes**.
+
+### Default Venues
+
+```typescript
+// Admin.tsx:66-79
+const [locCapacities, setLocCapacities] = useState(() => {
+    const saved = localStorage.getItem("site_location_capacities");
+    if (saved) return JSON.parse(saved);
+    return {
+        "Auditorio Paraninfo": 100,
+        "Auditorio Torres": 100,
+        "Auditorio Sede 4 - Sala 1": 30,
+        "Auditorio Sede 4 - Sala 2": 30,
+        "Auditorio Sede 4 - Sala 3": 30,
+        "Auditorio Sede 4 - Sala 4": 30,
+        "Auditorio Sede 4 - Sala 5": 30,
+        "Auditorio Sede 4 - Sala 6": 30
+    };
+});
+```
+
+### Adding New Venues
+
+<Steps>
+  <Step title="Navigate to Aforos">
+    Go to **Configuración Página > Aforos y Sedes**.
+  </Step>
+
+  <Step title="Fill Venue Form">
+    Enter:
+    - **Nombre Completo del Sitio**: E.g., "Auditorio Central"
+    - **Capacidad de Aforo**: Maximum attendees
+  </Step>
+
+  <Step title="Create Venue">
+    Click **Crear Sitio**. The new venue appears in conference location dropdowns immediately.
+  </Step>
+</Steps>
+
+<Tip>
+Use the **⚡ Sede 4: Agregar Sala Rápido** button to quickly add numbered rooms to Sede 4 with default capacity of 30.
+</Tip>
+
+## Day Management
+
+Configure event days in **Configuración Página > 📅 Agenda**:
+
+```typescript
+// Admin.tsx:273-286
+const [agendaDays, setAgendaDays] = useState<{ id: string, label: string }[]>(() => {
+    const saved = localStorage.getItem("agenda_days_info");
+    if (saved) return JSON.parse(saved);
+    return [
+        { id: "day1", label: "Día 1" },
+        { id: "day2", label: "Día 2" },
+        { id: "day3", label: "Día 3" }
+    ];
+});
+
+useEffect(() => {
+    localStorage.setItem("agenda_days_info", JSON.stringify(agendaDays));
+    localStorage.setItem("agenda_num_days", String(agendaDays.length));
+}, [agendaDays]);
+```
+
+<Steps>
+  <Step title="Edit Day Labels">
+    Change day names (e.g., "Opening Day", "Workshop Day", "Closing Day").
+  </Step>
+
+  <Step title="Add More Days">
+    Click **+ Agregar un Día Adicional** to extend the event schedule.
+  </Step>
+
+  <Step title="Remove Days">
+    Click 🗑️ next to any day (minimum 1 day required).
+  </Step>
+</Steps>
+
+## Filter Configuration
+
+Customize agenda filters in **Configuración Página > 📅 Agenda > Configuración de Filtros**:
+
+```typescript
+// Admin.tsx:288-329
+const [agendaFilters, setAgendaFilters] = useState<any[]>(() => {
+    const saved = localStorage.getItem("agenda_filters_config");
+    if (saved) return JSON.parse(saved);
+    return [
+        {
+            id: "modality",
+            label: "Modalidad",
+            property: "type",
+            icon: "📍",
+            options: [
+                { value: "all", label: "Todas las Modalidades" },
+                { value: "presencial", label: "Presencial" },
+                { value: "virtual", label: "Virtual" }
+            ]
+        },
+        {
+            id: "career",
+            label: "Carrera",
+            property: "career",
+            icon: "🎓",
+            options: [
+                { value: "all", label: "Todas las Carreras" },
+                { value: "Ingeniería de Sistemas", label: "Ingeniería de Sistemas" },
+                { value: "General", label: "General" }
+                // ... more options
+            ]
+        }
+    ];
+});
+```
+
+<Info>
+Filters are dynamically applied to the public agenda page based on the `property` field matching conference data keys.
+</Info>
+
+## Conference Data Structure
+
+```typescript
+interface Conference {
+    id: string
+    title: string
+    description: string
+    startTime: string              // ISO string or HH:MM format
+    endTime: string
+    location: string               // Matches venue name
+    dayId: string                  // E.g., "day1", "day2"
+    category: string
+    level: string
+    type: 'presencial' | 'virtual'
+    virtualLink?: string           // Required if type === 'virtual'
+    career?: string                // Target academic program
+    documentUrl?: string           // External resource link
+    documentFile?: string          // Base64 encoded file
+    speaker: {
+        name: string
+        organization: string
+        bio: string
+        avatar: string
+    }
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Scheduling Tips">
+    - Avoid overlapping sessions in the same venue
+    - Leave 15-minute buffers between sessions for transitions
+    - Schedule popular speakers in larger auditoriums
+    - Balance virtual and presencial offerings
+  </Accordion>
+
+  <Accordion title="Resource Management">
+    - Upload compressed files to avoid localStorage limits
+    - Use external links for large documents (>1MB)
+    - Test virtual meeting links before publishing
+    - Include backup meeting links in description
+  </Accordion>
+
+  <Accordion title="Data Consistency">
+    - Use consistent naming for recurring sessions
+    - Assign correct career affiliations for filtering
+    - Keep descriptions concise but informative
+    - Update conference status if cancelled/rescheduled
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Speaker not appearing in dropdown">
+    The speaker must be created in the **Invitados** section first. Refresh the admin page if a newly added speaker doesn't appear immediately.
+  </Accordion>
+
+  <Accordion title="QR code download fails">
+    Ensure pop-ups are not blocked in your browser. The QR download uses a dynamically created anchor element that may be blocked by strict browser settings.
+  </Accordion>
+
+  <Accordion title="Time validation issues">
+    Ensure end time is after start time. The form validation requires `startTime < endTime` but doesn't enforce it client-side, so check manually.
+  </Accordion>
+
+  <Accordion title="Virtual link not saving">
+    Virtual links are only required and saved when `type === 'virtual'`. Switch modality to Virtual before entering the meeting link.
+  </Accordion>
+</AccordionGroup>

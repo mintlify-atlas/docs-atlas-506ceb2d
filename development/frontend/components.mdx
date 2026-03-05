@@ -1,0 +1,361 @@
+---
+title: Components
+description: Reusable UI components in the CONIITI 2026 frontend
+---
+
+# Components
+
+The CONIITI 2026 frontend uses a library of reusable React components built with TypeScript. All components follow functional component patterns with hooks.
+
+## Component Overview
+
+The main reusable components are located in `src/components/`:
+
+- **Layout** - Main application shell with header/footer
+- **ConferenceCard** - Display conference details with registration
+- **CountdownTimer** - Event countdown display
+- **DayTabs** - Day filter navigation for agenda
+
+## Layout Component
+
+The core layout wrapper that provides navigation, user authentication UI, and responsive design.
+
+### Usage
+
+```tsx title="src/App.tsx"
+import Layout from "./components/Layout"
+
+<Layout>
+  <Routes>
+    {/* Your routes */}
+  </Routes>
+</Layout>
+```
+
+### Features
+
+**Navigation**
+- Sticky header with logo
+- Responsive hamburger menu for mobile
+- Language switcher (Spanish/English)
+- User authentication state display
+- Role-based menu items (Admin link for authorized users)
+
+**Session Management**
+- Monitors `localStorage` for user session
+- Auto-refreshes on route changes
+- Handles cross-tab authentication sync
+
+**Theming Integration**
+- Applies theme from localStorage (`site_theme`)
+- Manages custom colors via CSS variables
+- Logo customization support
+
+### Key Props
+
+```tsx
+type Props = {
+  children: ReactNode  // Page content to wrap
+}
+```
+
+### State Management
+
+```tsx title="src/components/Layout.tsx" {2-3}
+export default function Layout({ children }: Props) {
+  const [user, setUser] = useState<any>(null)
+  const [lang, setLang] = useState<Language>(
+    (localStorage.getItem("app_lang") as Language) || 'es'
+  )
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [logoEvento, setLogoEvento] = useState("/logo-coniiti.png")
+  
+  // ... implementation
+}
+```
+
+### Translation Helper
+
+```tsx title="src/components/Layout.tsx"
+import { translations, getTranslation } from "../utils/i18n"
+
+const t = (key: keyof typeof translations.es) => getTranslation(key, lang)
+
+// Usage:
+<Link to="/">{t("nav_home")}</Link>
+```
+
+### Event Tracking
+
+```tsx title="src/components/Layout.tsx" {4-9}
+import { trackEvent } from "../utils/tracker"
+
+useEffect(() => {
+  const handleClick = (e: MouseEvent) => {
+    const target = e.target as HTMLElement
+    if (target.tagName === 'A' || target.tagName === 'BUTTON') {
+      const text = target.innerText || target.getAttribute('alt') || 'Sin texto'
+      trackEvent('CLICK', location.pathname, `Clic en: ${text.slice(0, 30)}`)
+    }
+  }
+  document.addEventListener('click', handleClick)
+  return () => document.removeEventListener('click', handleClick)
+}, [location])
+```
+
+## ConferenceCard Component
+
+Displays individual conference information with registration functionality.
+
+### Usage
+
+```tsx title="src/pages/Agenda.tsx"
+import ConferenceCard from "../components/ConferenceCard"
+import type { Conference } from "../types/conference"
+
+conferences.map(conf => (
+  <ConferenceCard key={conf.id} conference={conf} />
+))
+```
+
+### Features
+
+- **Dynamic capacity management** - Shows available seats in real-time
+- **Color-coded availability** - Visual feedback (green → yellow → orange → red)
+- **Registration handling** - One-click registration with authentication check
+- **Modality badges** - Displays virtual vs. in-person
+- **Document links** - Optional material downloads/URLs
+- **Progress bar** - Visual capacity indicator
+
+### Props
+
+```tsx title="src/components/ConferenceCard.tsx"
+type Props = {
+  conference: Conference  // Conference data object
+}
+```
+
+### Conference Type
+
+```tsx title="src/types/conference.ts"
+export type Conference = {
+  id: string
+  title: string
+  description: string
+  startTime: string
+  endTime: string
+  location: string
+  speaker: Speaker
+  category?: string
+  level?: string
+  type?: 'presencial' | 'virtual'
+  virtualLink?: string
+  dayId?: string
+  documentUrl?: string
+  documentFile?: string
+  attended?: boolean
+}
+
+export type Speaker = {
+  name: string
+  bio: string
+  avatar: string
+  organization?: string
+}
+```
+
+### Registration Logic
+
+```tsx title="src/components/ConferenceCard.tsx" {3-6,12-16}
+const handleRegister = () => {
+  const sessionData = localStorage.getItem("user_session");
+  if (!sessionData) {
+    alert("Debes iniciar sesión para inscribirte en conferencias.");
+    window.location.href = "/login";
+    return;
+  }
+
+  const currentUser = JSON.parse(sessionData);
+  setIsLoading(true);
+
+  setTimeout(() => {
+    setIsLoading(false);
+    setIsRegistered(true);
+    setAvailableSeats((prev: number) => prev - 1);
+    
+    // Update global stats and user registrations
+    // ...
+  }, 1500);
+}
+```
+
+### Capacity Color Logic
+
+```tsx title="src/components/ConferenceCard.tsx"
+const getStockColor = () => {
+  if (availableSeats <= 0) return "#ff4d4d";      // Red
+  if (availableSeats <= 50) return "#ffa500";     // Orange
+  if (availableSeats <= 100) return "#fff9c4";    // Yellow
+  return "#c8e6c9";                                // Green
+};
+```
+
+## CountdownTimer Component
+
+Displays a live countdown to the event start date.
+
+### Usage
+
+```tsx title="src/pages/Home.tsx"
+import CountdownTimer from "../components/CountdownTimer"
+
+<CountdownTimer />
+```
+
+### Features
+
+- Real-time countdown (updates every second)
+- Displays days, hours, minutes, seconds
+- Auto-stops when event starts
+- No props required (date is hardcoded)
+
+### Implementation
+
+```tsx title="src/components/CountdownTimer.tsx" {1,6-14}
+const targetDate = new Date("2026-10-01T08:00:00").getTime()
+
+const [timeLeft, setTimeLeft] = useState({
+  days: 0, hours: 0, minutes: 0, seconds: 0
+})
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    const now = new Date().getTime()
+    const difference = targetDate - now
+
+    if (difference > 0) {
+      setTimeLeft({
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((difference % (1000 * 60)) / 1000)
+      })
+    } else {
+      clearInterval(timer)
+    }
+  }, 1000)
+
+  return () => clearInterval(timer)
+}, [])
+```
+
+## DayTabs Component
+
+Tab navigation for filtering conferences by day.
+
+### Usage
+
+```tsx title="src/pages/Agenda.tsx"
+import DayTabs from "../components/DayTabs"
+import type { DayOption } from "../components/DayTabs"
+
+const days: DayOption[] = [
+  { id: 'day1', label: 'Día 1' },
+  { id: 'day2', label: 'Día 2' },
+  { id: 'day3', label: 'Día 3' }
+]
+
+const [activeDayId, setActiveDayId] = useState('day1')
+
+<DayTabs 
+  days={days} 
+  activeDayId={activeDayId} 
+  onChange={setActiveDayId} 
+/>
+```
+
+### Props
+
+```tsx title="src/components/DayTabs.tsx"
+export type DayOption = {
+  id: string
+  label: string
+}
+
+type Props = {
+  days: DayOption[]           // Array of day options
+  activeDayId: string         // Currently selected day ID
+  onChange: (dayId: string) => void  // Callback when tab changes
+}
+```
+
+### Implementation
+
+```tsx title="src/components/DayTabs.tsx"
+export default function DayTabs({ days, activeDayId, onChange }: Props) {
+  return (
+    <div className="dayTabs">
+      {days.map((d) => {
+        const isActive = d.id === activeDayId;
+
+        return (
+          <button
+            key={`${d.id}-${d.id === activeDayId ? "on" : "off"}`}
+            className={`dayTab ${isActive ? "active" : ""}`}
+            onClick={() => onChange(d.id)}
+          >
+            <span className="dayTabIcon">📅</span>
+            {d.label}
+          </button>
+        );
+      });
+    </div>
+  );
+}
+```
+
+## Component Best Practices
+
+1. **TypeScript Props** - Always define prop types
+2. **Cleanup Effects** - Return cleanup functions from `useEffect`
+3. **localStorage Sync** - Listen to `storage` and custom events for multi-tab updates
+4. **Accessibility** - Use semantic HTML and ARIA attributes
+5. **Mobile-first** - All components should be responsive
+6. **Translation Ready** - Use i18n utilities for all user-facing text
+
+## Creating New Components
+
+When creating a new component:
+
+1. Create in `src/components/ComponentName.tsx`
+2. Define TypeScript types for props
+3. Use functional component pattern with hooks
+4. Add component-specific styles in `src/styles/components/`
+5. Export as default
+6. Document props and usage
+
+Example template:
+
+```tsx
+import { useState, useEffect } from "react"
+
+type Props = {
+  // Define your props here
+}
+
+export default function MyComponent({ }: Props) {
+  // Component logic
+  
+  return (
+    <div className="my-component">
+      {/* Component JSX */}
+    </div>
+  )
+}
+```
+
+## Next Steps
+
+- [Theming](/development/frontend/theming) - Learn about the design system
+- [Routing](/development/frontend/routing) - Understand navigation
+- [Project Structure](/development/frontend/project-structure) - See where components fit

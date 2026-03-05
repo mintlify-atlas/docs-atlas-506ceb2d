@@ -1,0 +1,500 @@
+---
+title: "Features"
+description: "Comprehensive guide to CONIITI 2026's powerful conference management capabilities"
+---
+
+# Platform Features
+
+CONIITI 2026 provides a rich set of features designed to streamline conference management and enhance the attendee experience. From powerful admin tools to user-friendly interfaces, the platform covers every aspect of event organization.
+
+## Admin Dashboard
+
+The comprehensive admin panel gives organizers complete control over conferences, speakers, analytics, and system settings.
+
+<CardGroup cols={2}>
+  <Card
+    title="Conference Management"
+    icon="calendar-days"
+    href="#conference-management"
+  >
+    Create, edit, delete, and restore conferences with rich metadata
+  </Card>
+  <Card
+    title="Speaker Management"
+    icon="microphone"
+    href="#speaker-management"
+  >
+    Manage speaker profiles with photos, bios, and organizational info
+  </Card>
+  <Card
+    title="Analytics Dashboard"
+    icon="chart-line"
+    href="#analytics-dashboard"
+  >
+    View real-time statistics on attendance, demographics, and performance
+  </Card>
+  <Card
+    title="System Configuration"
+    icon="gear"
+    href="#system-configuration"
+  >
+    Customize themes, logos, venue capacities, and agenda structure
+  </Card>
+</CardGroup>
+
+### Role-Based Access Control
+
+CONIITI 2026 implements a sophisticated permission system with four distinct roles:
+
+<Steps>
+  <Step title="SUPER_ADMIN">
+    Full system access including configuration, user management, performance monitoring, and trash recovery
+  </Step>
+  <Step title="ADMIN">
+    Manage conferences, speakers, and view analytics
+  </Step>
+  <Step title="CONTENT_MANAGER">
+    Create and edit conferences and speakers
+  </Step>
+  <Step title="VIEWER">
+    Read-only access to analytics and event data
+  </Step>
+</Steps>
+
+The role check is enforced at the frontend level:
+
+```typescript
+useEffect(() => {
+  const session = localStorage.getItem("user_session")
+  if (session) {
+    const user = JSON.parse(session)
+    if (user.role === "SUPER_ADMIN" || user.role === "ADMIN" || 
+        user.role === "VIEWER" || user.role === "CONTENT_MANAGER") {
+      setUserRole(user.role)
+    } else {
+      navigate("/") // No permissions
+    }
+  } else {
+    navigate("/login") // No session
+  }
+}, [navigate])
+```
+
+## Conference Management
+
+### Creating Conferences
+
+Administrators can create comprehensive conference entries with the following attributes:
+
+<CardGroup cols={3}>
+  <Card title="Basic Info" icon="info-circle">
+    Title, description, day, and time range
+  </Card>
+  <Card title="Location" icon="location-dot">
+    Physical venue or virtual link with capacity tracking
+  </Card>
+  <Card title="Targeting" icon="graduation-cap">
+    Academic program (career) and modality (presencial/virtual)
+  </Card>
+  <Card title="Speaker" icon="user-tie">
+    Select from existing speakers or create new ones
+  </Card>
+  <Card title="Resources" icon="file">
+    Attach external links or upload files (PDFs, slides)
+  </Card>
+  <Card title="Scheduling" icon="clock">
+    Multi-day support with customizable day labels
+  </Card>
+</CardGroup>
+
+Example of the conference creation API call:
+
+```typescript
+const handleAddConference = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsLoading(true)
+
+  try {
+    const { createPonencia } = await import("../services/api");
+
+    const ponenciaData = {
+      titulo: newConf.title,
+      descripcion: newConf.description,
+      hora_inicio: newConf.startTime,
+      hora_fin: newConf.endTime,
+      sala_id: 1,
+      dia_id: parseInt(newConf.dayId.replace("day", "")) || 1,
+      dayId: newConf.dayId,
+      documentUrl: newConf.documentUrl,
+      documentFile: newConf.documentFile,
+      speaker: { 
+        name: finalSpeaker.name, 
+        organization: finalSpeaker.organization, 
+        avatar: "/default-avatar.png", 
+        bio: "" 
+      }
+    };
+
+    await createPonencia(ponenciaData);
+    
+    // Update local state immediately
+    const updatedConfs = [...conferences, { ...ponenciaData, id: Date.now().toString() }];
+    setConferences(updatedConfs);
+    localStorage.setItem("site_conferences", JSON.stringify(updatedConfs));
+
+    setShowConfForm(false);
+  } catch (err: any) {
+    console.error("Error saving conference:", err);
+  } finally {
+    setIsLoading(false);
+  }
+}
+```
+
+### Editing and Deletion
+
+<Note>
+All conference modifications are synchronized to `localStorage` and optionally to the backend API, ensuring data persistence even if the backend is temporarily unavailable.
+</Note>
+
+### Trash and Recovery System
+
+Super admins have access to a **papelera (trash bin)** feature that stores deleted conferences for recovery:
+
+```typescript
+const handleDeleteConference = async (id: string) => {
+  if (!confirm("¿Estás seguro de eliminar esta conferencia?")) return;
+
+  try {
+    const { deletePonencia } = await import("../services/api");
+    await deletePonencia(id);
+    setConferences(conferences.filter((c: any) => c.id !== id));
+  } catch (err) {
+    console.error("Error deleting conference:", err);
+  }
+}
+
+const handleRestoreConference = (id: string) => {
+  const confToRestore = deletedConferences.find((c: any) => c.id === id)
+  if (confToRestore) {
+    setConferences([...conferences, confToRestore])
+    setDeletedConferences(deletedConferences.filter((c: any) => c.id !== id))
+  }
+}
+```
+
+## Speaker Management
+
+### Speaker Profiles
+
+Each speaker profile includes:
+
+- **Full name** and **organization**
+- **Professional biography**
+- **Avatar/photo** (uploaded from local device or URL)
+- **Linked conferences** (automatically tracked)
+
+### Photo Upload with Preview
+
+Administrators can upload speaker photos directly from their devices:
+
+```typescript
+const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setNewGuest({ ...newGuest, avatar: reader.result as string })
+    }
+    reader.readAsDataURL(file)
+  }
+}
+```
+
+<Info>
+Photos are converted to Base64 and stored locally, eliminating the need for external image hosting services.
+</Info>
+
+### Speaker-Conference Synchronization
+
+When creating a conference, speakers are automatically extracted and unified from multiple sources:
+
+```typescript
+// Unify speakers from API, conferences, and local storage
+const finalSpeakers = [...ponentesData];
+const speakerNames = new Set(finalSpeakers.map(s => (s.nombre || s.name)));
+
+// Extract from current conferences
+finalConfs.forEach((c: any) => {
+  const cSpeakerName = c.speaker?.name || c.speaker?.nombre;
+  if (cSpeakerName && !speakerNames.has(cSpeakerName)) {
+    finalSpeakers.push({
+      id: `sp-auto-${c.id}`,
+      nombre: cSpeakerName,
+      organizacion: c.speaker.organization || "Independiente",
+      bio: c.speaker.bio || "Invitado experto",
+      avatar_url: c.speaker.avatar || "/default-avatar.png"
+    });
+    speakerNames.add(cSpeakerName);
+  }
+});
+```
+
+## QR Code Attendance System
+
+### QR Code Generation
+
+Each conference can generate a unique QR code for attendance tracking:
+
+```tsx
+<QRCode
+  id={`qr-code-svg-${qrModalConf.id}`}
+  value={`CONF_ATTENDANCE_${qrModalConf.id}`}
+  size={256}
+  level="H"
+/>
+```
+
+<Tip>
+QR codes can be downloaded as PNG images for printing and display at conference entrances.
+</Tip>
+
+### Download Functionality
+
+The platform includes a download feature that converts the SVG QR code to PNG:
+
+```typescript
+const downloadQR = () => {
+  const svg = document.getElementById(`qr-code-svg-${qrModalConf?.id}`);
+  if (!svg) return;
+  const svgData = new XMLSerializer().serializeToString(svg);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const img = new Image();
+  img.onload = () => {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    if (ctx) {
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      const a = document.createElement("a");
+      a.download = `Asistencia-${qrModalConf?.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    }
+  };
+  img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+}
+```
+
+## Analytics Dashboard
+
+### Key Metrics
+
+The analytics dashboard provides insights into:
+
+<CardGroup cols={2}>
+  <Card title="Page Views" icon="eye">
+    Track which pages receive the most traffic
+  </Card>
+  <Card title="Gender Distribution" icon="venus-mars">
+    View demographic breakdown of registered users
+  </Card>
+  <Card title="Conference Stats" icon="chart-bar">
+    Analyze enrollment and attendance by conference
+  </Card>
+  <Card title="Performance Metrics" icon="gauge-high">
+    Monitor load times, resource sizes, and user experience
+  </Card>
+</CardGroup>
+
+### Real-Time Tracking
+
+The platform uses `PerformanceObserver` API to track resource loading:
+
+```typescript
+const observer = new PerformanceObserver((list) => {
+  list.getEntries().forEach((entry: any) => {
+    if (entry.entryType === 'resource') {
+      const isImg = ['img', 'image'].includes(entry.initiatorType) ||
+        /\.(jpg|jpeg|png|webp|gif|svg)/.test(entry.name);
+
+      if (isImg) {
+        trackEvent('IMAGE_LOAD', location.pathname, entry.name, 
+                   Math.round(entry.duration), entry.transferSize);
+      }
+      trackEvent('RESOURCE_LOAD', location.pathname, entry.name, 
+                 Math.round(entry.duration), entry.transferSize);
+    }
+  });
+});
+
+observer.observe({ type: 'resource', buffered: true });
+```
+
+### Visualization with Recharts
+
+Analytics are displayed using interactive charts from the Recharts library:
+
+```tsx
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, 
+  ScatterChart, Scatter, ZAxis
+} from 'recharts'
+```
+
+## System Configuration
+
+### Dynamic Theming
+
+Super admins can customize the entire platform's visual identity:
+
+<CardGroup cols={2}>
+  <Card title="Colors" icon="palette">
+    Background, text, header, primary, and secondary colors
+  </Card>
+  <Card title="Logos" icon="image">
+    University logo and event logo
+  </Card>
+  <Card title="Banners" icon="panorama">
+    Hero banner image
+  </Card>
+  <Card title="Venues" icon="building">
+    Manage auditorium capacities
+  </Card>
+</CardGroup>
+
+Example of color customization state management:
+
+```typescript
+const [bgColor, setBgColor] = useState(localStorage.getItem("custom_bg_color") || "#ffffff")
+const [textColor, setTextColor] = useState(localStorage.getItem("custom_text_color") || "#1b1a1a")
+const [headerColor, setHeaderColor] = useState(localStorage.getItem("custom_header_bg") || "#1f2a44")
+const [primaryColor, setPrimaryColor] = useState(localStorage.getItem("custom_primary_color") || "#2563EB")
+const [secondaryColor, setSecondaryColor] = useState(localStorage.getItem("custom_secondary_color") || "#1E293B")
+
+const dispatchUpdate = () => {
+  window.dispatchEvent(new Event('site-config-updated'));
+  // Update preview states
+  setBannerPreview(localStorage.getItem("site_banner") || "/banner-header.png");
+  setLogoUniPreview(localStorage.getItem("site_logo_uni") || "/ucatolica-logo.png");
+  // ... more updates
+};
+```
+
+### Agenda Structure Configuration
+
+Administrators can define the number of days and their labels:
+
+```typescript
+const [agendaDays, setAgendaDays] = useState<{ id: string, label: string }[]>(() => {
+  const saved = localStorage.getItem("agenda_days_info");
+  if (saved) return JSON.parse(saved);
+  return [
+    { id: "day1", label: "Día 1" },
+    { id: "day2", label: "Día 2" },
+    { id: "day3", label: "Día 3" }
+  ];
+});
+```
+
+### Venue Capacity Management
+
+Track and manage capacity limits for each venue:
+
+```typescript
+const [locCapacities, setLocCapacities] = useState(() => {
+  const saved = localStorage.getItem("site_location_capacities");
+  if (saved) return JSON.parse(saved);
+  return {
+    "Auditorio Paraninfo": 100,
+    "Auditorio Torres": 100,
+    "Auditorio Sede 4 - Sala 1": 30,
+    "Auditorio Sede 4 - Sala 2": 30,
+    // ... more venues
+  };
+});
+```
+
+## User Features
+
+### Conference Discovery
+
+Attendees can browse conferences with advanced filtering:
+
+- **By Day**: Multi-day tabs for easy navigation
+- **By Career**: Filter by academic program
+- **By Modality**: Presencial vs. Virtual
+- **Search**: Full-text search across titles and descriptions
+
+### Conference Enrollment
+
+Users can register for conferences they're interested in attending:
+
+```typescript
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+export const createPonencia = (data: any) => apiFetch('/ponencias', {
+  method: 'POST',
+  body: JSON.stringify(data)
+});
+```
+
+### Personal Profile Management
+
+Each user has a profile with:
+
+- Full name and email
+- Academic program (career)
+- Enrolled conferences
+- Attendance history
+
+## Multi-Language Support
+
+The platform supports **Spanish** and **English** through a centralized translation system:
+
+```typescript
+import { translations, getTranslation } from "../utils/i18n"
+import type { Language } from "../utils/i18n"
+
+const [lang, setLang] = useState<Language>(
+  (localStorage.getItem("app_lang") as Language) || 'es'
+)
+
+const t = (key: keyof typeof translations.es) => getTranslation(key, lang)
+
+// Usage in components
+<h1>{t('admin_title')}</h1>
+```
+
+<Info>
+Language preferences persist across sessions and are synchronized via custom events.
+</Info>
+
+## Real-Time Synchronization
+
+All changes made in the admin panel are immediately visible to attendees through:
+
+1. **LocalStorage persistence** for immediate updates
+2. **Custom events** to trigger re-renders across components
+3. **API synchronization** for backend persistence
+
+```typescript
+useEffect(() => {
+  localStorage.setItem("site_conferences", JSON.stringify(conferences))
+}, [conferences])
+
+// Trigger update event
+window.dispatchEvent(new Event('site-config-updated'));
+```
+
+<Card
+  title="Understand the architecture"
+  icon="sitemap"
+  href="/architecture"
+  horizontal
+>
+  Learn how CONIITI 2026 is built and deployed
+</Card>

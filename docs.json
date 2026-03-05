@@ -1,122 +1,146 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "CONIITI 2026",
+  "theme": "almond",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#1e3a8a",
+    "light": "#3b82f6",
+    "dark": "#1e40af"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/csanchez-dev/proyectoProduccion"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/csanchez-dev/proyectoProduccion"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Platform",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Overview",
             "pages": [
-              "index",
+              "introduction",
+              "features",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Getting Started",
+            "pages": [
               "quickstart",
-              "development"
+              "installation",
+              "configuration"
             ]
           },
           {
-            "group": "Customization",
+            "group": "User Guide",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "user-guide/registration",
+              "user-guide/profile-management",
+              "user-guide/conference-enrollment",
+              "user-guide/qr-attendance"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Admin Guide",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "admin-guide/dashboard-overview",
+              "admin-guide/managing-speakers",
+              "admin-guide/managing-conferences",
+              "admin-guide/theme-customization",
+              "admin-guide/user-management"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Authentication",
             "pages": [
-              "api-reference/introduction"
+              "api/authentication/overview",
+              "api/authentication/register",
+              "api/authentication/profile"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Events",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/events/list-events",
+              "api/events/create-event"
+            ]
+          },
+          {
+            "group": "Conferences",
+            "pages": [
+              "api/conferences/list-conferences",
+              "api/conferences/create-conference",
+              "api/conferences/update-conference",
+              "api/conferences/delete-conference"
+            ]
+          },
+          {
+            "group": "Speakers",
+            "pages": [
+              "api/speakers/list-speakers",
+              "api/speakers/create-speaker"
+            ]
+          },
+          {
+            "group": "Enrollment",
+            "pages": [
+              "api/enrollment/enroll",
+              "api/enrollment/my-enrollments"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Setup",
+            "pages": [
+              "development/local-setup",
+              "development/environment-variables",
+              "development/database-setup"
+            ]
+          },
+          {
+            "group": "Frontend",
+            "pages": [
+              "development/frontend/project-structure",
+              "development/frontend/routing",
+              "development/frontend/components",
+              "development/frontend/theming"
+            ]
+          },
+          {
+            "group": "Backend",
+            "pages": [
+              "development/backend/project-structure",
+              "development/backend/modules",
+              "development/backend/authentication",
+              "development/backend/supabase-integration"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "development/deployment/render-deployment",
+              "development/deployment/environment-setup"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

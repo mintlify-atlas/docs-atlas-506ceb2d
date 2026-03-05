@@ -1,0 +1,179 @@
+---
+title: "Introduction"
+description: "Learn about CONIITI 2026, a comprehensive conference management platform for the International Congress of Innovation and Trends in Engineering"
+---
+
+# Introduction to CONIITI 2026
+
+CONIITI 2026 is a full-stack **conference management platform** designed specifically for the **International Congress of Innovation and Trends in Engineering** (Congreso Internacional de Innovación y Tendencias en Ingeniería) at the Universidad Católica de Colombia.
+
+## What is CONIITI 2026?
+
+CONIITI 2026 is a modern SaaS application that provides end-to-end conference management capabilities, enabling organizers to manage events, speakers, and attendees while providing participants with an intuitive interface to explore and register for conferences.
+
+<CardGroup cols={2}>
+  <Card
+    title="For Organizers"
+    icon="user-gear"
+  >
+    Comprehensive admin dashboard to manage conferences, speakers, analytics, and attendee tracking with QR code-based attendance
+  </Card>
+  <Card
+    title="For Attendees"
+    icon="users"
+  >
+    User-friendly interface to browse conferences, view speaker profiles, register for events, and manage personal agendas
+  </Card>
+</CardGroup>
+
+## Purpose and Vision
+
+The platform was built to **modernize the conference management experience** by replacing manual processes with automated workflows and providing real-time synchronization between administrators and attendees.
+
+<Note>
+CONIITI 2026 emphasizes both **user experience** and **technical excellence**, leveraging modern web technologies to deliver a responsive, scalable, and maintainable solution.
+</Note>
+
+### Key Objectives
+
+<Steps>
+  <Step title="Streamline Event Management">
+    Provide administrators with powerful tools to create, edit, and manage conferences across multiple days and venues
+  </Step>
+  <Step title="Enhance Attendee Experience">
+    Offer participants an intuitive interface to discover relevant conferences based on their career interests
+  </Step>
+  <Step title="Enable Real-time Updates">
+    Synchronize data automatically between the admin panel and public-facing pages
+  </Step>
+  <Step title="Support Data-Driven Decisions">
+    Provide comprehensive analytics on attendance, user demographics, and platform performance
+  </Step>
+</Steps>
+
+## Target Users
+
+### Event Administrators
+
+<CardGroup cols={3}>
+  <Card title="Super Admin" icon="shield">
+    Full system access including configuration, user management, and performance monitoring
+  </Card>
+  <Card title="Admin / Content Manager" icon="pen-to-square">
+    Manage conferences, speakers, and event logistics
+  </Card>
+  <Card title="Viewer" icon="eye">
+    Read-only access to analytics and event data
+  </Card>
+</CardGroup>
+
+### Conference Participants
+
+- **Students** from various engineering programs (Systems, Electronics, Industrial, Civil Engineering, etc.)
+- **Faculty members** interested in academic research and innovation
+- **External guests** from partner universities and organizations
+- **Industry professionals** attending keynotes and networking sessions
+
+## Core Capabilities
+
+### Conference Management
+
+The platform enables administrators to create comprehensive conference entries with rich metadata:
+
+```typescript
+type Conference = {
+  id: string
+  title: string
+  description: string
+  startTime: string
+  endTime: string
+  location: string
+  speaker: Speaker
+  category?: string
+  level?: string
+  career?: string
+  type?: 'presencial' | 'virtual'
+  virtualLink?: string
+  dayId?: string
+  documentUrl?: string
+  documentFile?: string
+  attended?: boolean
+}
+```
+
+<Info>
+Conferences can be scheduled across multiple days, assigned to specific venues with capacity limits, and tagged by academic program for personalized filtering.
+</Info>
+
+### Speaker Profiles
+
+Each conference is associated with a speaker profile containing biographical information and organizational affiliation:
+
+```typescript
+type Speaker = {
+  name: string
+  bio: string
+  avatar: string
+  organization?: string
+}
+```
+
+### User Authentication & Roles
+
+The platform uses **Supabase Authentication** to manage user accounts with role-based access control:
+
+- Secure registration and login flows
+- Email-based password reset
+- Profile management with career information
+- Session persistence across devices
+
+### QR Code Attendance Tracking
+
+Administrators can generate unique QR codes for each conference to streamline check-in:
+
+```tsx
+<QRCode
+  id={`qr-code-svg-${conference.id}`}
+  value={`CONF_ATTENDANCE_${conference.id}`}
+  size={256}
+  level="H"
+/>
+```
+
+Attendees scan these codes on-site to mark their attendance, enabling real-time tracking and analytics.
+
+## Dynamic Theming System
+
+CONIITI 2026 features a **country-based theming system** that allows administrators to customize the visual identity of the platform. Colors, logos, and banners can be updated from the admin panel and are instantly reflected across all pages.
+
+<Tip>
+The theming system stores preferences in `localStorage` and dispatches custom events to update the UI in real-time without requiring page refreshes.
+</Tip>
+
+## Multi-Language Support
+
+The platform supports both **Spanish** and **English** interfaces, with translations managed through the i18n utility:
+
+```typescript
+const t = (key: keyof typeof translations.es) => getTranslation(key, lang)
+```
+
+Language preferences are stored locally and synchronized across sessions.
+
+## Performance Monitoring
+
+CONIITI 2026 includes built-in performance tracking to monitor:
+
+- Page load times
+- Resource loading (images, assets)
+- User navigation patterns
+- Conference enrollment metrics
+
+<Card
+  title="Ready to dive deeper?"
+  icon="arrow-right"
+  href="/features"
+  horizontal
+>
+  Explore the complete feature set of CONIITI 2026
+</Card>

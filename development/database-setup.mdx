@@ -1,0 +1,572 @@
+---
+title: 'Database Setup'
+description: 'Configure Supabase database and authentication for CONIITI 2026'
+---
+
+# Database Setup
+
+The CONIITI 2026 platform uses Supabase as its backend database and authentication provider. This guide walks you through setting up your Supabase project.
+
+## Overview
+
+Supabase provides:
+- **PostgreSQL Database** - Relational database for storing events, speakers, presentations, and user data
+- **Authentication** - Built-in auth with JWT tokens
+- **Row Level Security (RLS)** - Database-level access control
+- **Real-time subscriptions** - Optional real-time data updates
+- **Storage** - File storage for images and documents
+
+## Creating a Supabase Project
+
+<Steps>
+  <Step title="Sign Up for Supabase">
+    Go to [supabase.com](https://supabase.com) and create a free account.
+  </Step>
+
+  <Step title="Create a New Project">
+    1. Click **New Project** in your organization
+    2. Enter project details:
+       - **Name**: `coniiti-2026` (or your preferred name)
+       - **Database Password**: Generate a strong password and save it securely
+       - **Region**: Choose the closest region to your users
+       - **Pricing Plan**: Free tier is sufficient for development
+    3. Click **Create new project**
+    4. Wait 2-3 minutes for the project to be provisioned
+  </Step>
+
+  <Step title="Save Your Credentials">
+    Once the project is ready:
+    1. Go to **Project Settings** (gear icon ⚙️)
+    2. Navigate to **API** section
+    3. Copy and save:
+       - **Project URL** (`SUPABASE_URL`)
+       - **anon/public key** (`SUPABASE_ANON_KEY`)
+       - **service_role key** (`SUPABASE_SERVICE_ROLE_KEY`)
+    
+    You'll need these for your [environment variables](/development/environment-variables).
+  </Step>
+</Steps>
+
+## Database Schema
+
+The CONIITI 2026 platform uses the following main tables:
+
+### Core Tables
+
+<Tabs>
+  <Tab title="evento (Events)">
+    Stores conference events and metadata.
+    
+    **Table**: `evento`
+    
+    | Column | Type | Description |
+    |--------|------|-------------|
+    | `id` | `bigint` | Primary key (auto-increment) |
+    | `nombre` | `text` | Event name |
+    | `descripcion` | `text` | Event description |
+    | `fecha_inicio` | `date` | Start date |
+    | `fecha_fin` | `date` | End date |
+    | `ubicacion` | `text` | Event location |
+    | `created_at` | `timestamp` | Creation timestamp |
+    | `updated_at` | `timestamp` | Last update timestamp |
+  </Tab>
+
+  <Tab title="ponente (Speakers)">
+    Stores speaker/presenter information.
+    
+    **Table**: `ponente`
+    
+    | Column | Type | Description |
+    |--------|------|-------------|
+    | `id` | `bigint` | Primary key (auto-increment) |
+    | `nombre` | `text` | Speaker full name |
+    | `bio` | `text` | Biography |
+    | `avatar_url` | `text` | Profile picture URL |
+    | `organizacion` | `text` | Organization/company |
+    | `email` | `text` | Contact email |
+    | `created_at` | `timestamp` | Creation timestamp |
+  </Tab>
+
+  <Tab title="ponencia (Presentations)">
+    Stores conference presentations/sessions.
+    
+    **Table**: `ponencia`
+    
+    | Column | Type | Description |
+    |--------|------|-------------|
+    | `id` | `bigint` | Primary key (auto-increment) |
+    | `titulo` | `text` | Presentation title |
+    | `descripcion` | `text` | Description |
+    | `hora_inicio` | `time` | Start time |
+    | `hora_fin` | `time` | End time |
+    | `dia_id` | `bigint` | Foreign key to day/event |
+    | `sala_id` | `bigint` | Foreign key to room |
+    | `category` | `text` | Category/track |
+    | `level` | `text` | Difficulty level |
+    | `type` | `text` | Type (presencial/virtual) |
+    | `virtualLink` | `text` | Virtual meeting link |
+    | `created_at` | `timestamp` | Creation timestamp |
+  </Tab>
+
+  <Tab title="usuario (Users)">
+    Stores user profiles (extends Supabase auth.users).
+    
+    **Table**: `usuario`
+    
+    | Column | Type | Description |
+    |--------|------|-------------|
+    | `id` | `uuid` | Primary key (matches auth.users.id) |
+    | `nombre` | `text` | Full name |
+    | `email` | `text` | Email address |
+    | `telefono` | `text` | Phone number |
+    | `organizacion` | `text` | Organization |
+    | `rol` | `text` | User role (attendee/speaker/admin) |
+    | `created_at` | `timestamp` | Registration timestamp |
+  </Tab>
+
+  <Tab title="inscripcion (Registrations)">
+    Tracks user registrations for presentations.
+    
+    **Table**: `inscripcion`
+    
+    | Column | Type | Description |
+    |--------|------|-------------|
+    | `id` | `bigint` | Primary key (auto-increment) |
+    | `usuario_id` | `uuid` | Foreign key to usuario |
+    | `ponencia_id` | `bigint` | Foreign key to ponencia |
+    | `asistio` | `boolean` | Attendance status |
+    | `created_at` | `timestamp` | Registration timestamp |
+  </Tab>
+
+  <Tab title="ponencia_ponente (Junction)">
+    Many-to-many relationship between presentations and speakers.
+    
+    **Table**: `ponencia_ponente`
+    
+    | Column | Type | Description |
+    |--------|------|-------------|
+    | `ponencia_id` | `bigint` | Foreign key to ponencia |
+    | `ponente_id` | `bigint` | Foreign key to ponente |
+    | `created_at` | `timestamp` | Creation timestamp |
+  </Tab>
+</Tabs>
+
+## Creating Database Tables
+
+<Steps>
+  <Step title="Open SQL Editor">
+    In your Supabase dashboard:
+    1. Click **SQL Editor** in the left sidebar
+    2. Click **New query**
+  </Step>
+
+  <Step title="Run Table Creation Script">
+    Copy and paste the following SQL script to create all tables:
+    
+    ```sql
+    -- Enable UUID extension
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    -- Create evento table
+    CREATE TABLE IF NOT EXISTS evento (
+      id BIGSERIAL PRIMARY KEY,
+      nombre TEXT NOT NULL,
+      descripcion TEXT,
+      fecha_inicio DATE NOT NULL,
+      fecha_fin DATE NOT NULL,
+      ubicacion TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create ponente table
+    CREATE TABLE IF NOT EXISTS ponente (
+      id BIGSERIAL PRIMARY KEY,
+      nombre TEXT NOT NULL,
+      bio TEXT,
+      avatar_url TEXT,
+      organizacion TEXT,
+      email TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create sala table (rooms)
+    CREATE TABLE IF NOT EXISTS sala (
+      id BIGSERIAL PRIMARY KEY,
+      nombre TEXT NOT NULL,
+      capacidad INTEGER,
+      ubicacion TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create dia_evento table (event days)
+    CREATE TABLE IF NOT EXISTS dia_evento (
+      id BIGSERIAL PRIMARY KEY,
+      evento_id BIGINT REFERENCES evento(id) ON DELETE CASCADE,
+      fecha DATE NOT NULL,
+      numero_dia INTEGER NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create ponencia table
+    CREATE TABLE IF NOT EXISTS ponencia (
+      id BIGSERIAL PRIMARY KEY,
+      titulo TEXT NOT NULL,
+      descripcion TEXT,
+      hora_inicio TIME NOT NULL,
+      hora_fin TIME NOT NULL,
+      dia_id BIGINT REFERENCES dia_evento(id) ON DELETE CASCADE,
+      sala_id BIGINT REFERENCES sala(id) ON DELETE SET NULL,
+      category TEXT DEFAULT 'General',
+      level TEXT DEFAULT 'Básico',
+      type TEXT DEFAULT 'presencial',
+      virtualLink TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create usuario table
+    CREATE TABLE IF NOT EXISTS usuario (
+      id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+      nombre TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      telefono TEXT,
+      organizacion TEXT,
+      rol TEXT DEFAULT 'attendee',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create inscripcion table
+    CREATE TABLE IF NOT EXISTS inscripcion (
+      id BIGSERIAL PRIMARY KEY,
+      usuario_id UUID REFERENCES usuario(id) ON DELETE CASCADE,
+      ponencia_id BIGINT REFERENCES ponencia(id) ON DELETE CASCADE,
+      asistio BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(usuario_id, ponencia_id)
+    );
+
+    -- Create ponencia_ponente junction table
+    CREATE TABLE IF NOT EXISTS ponencia_ponente (
+      ponencia_id BIGINT REFERENCES ponencia(id) ON DELETE CASCADE,
+      ponente_id BIGINT REFERENCES ponente(id) ON DELETE CASCADE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      PRIMARY KEY (ponencia_id, ponente_id)
+    );
+
+    -- Create indexes for better query performance
+    CREATE INDEX IF NOT EXISTS idx_ponencia_dia ON ponencia(dia_id);
+    CREATE INDEX IF NOT EXISTS idx_ponencia_sala ON ponencia(sala_id);
+    CREATE INDEX IF NOT EXISTS idx_inscripcion_usuario ON inscripcion(usuario_id);
+    CREATE INDEX IF NOT EXISTS idx_inscripcion_ponencia ON inscripcion(ponencia_id);
+    CREATE INDEX IF NOT EXISTS idx_dia_evento_evento ON dia_evento(evento_id);
+    ```
+    
+    Click **Run** to execute the script.
+  </Step>
+
+  <Step title="Verify Tables Created">
+    1. Click **Table Editor** in the left sidebar
+    2. You should see all the tables listed:
+       - `evento`
+       - `ponente`
+       - `ponencia`
+       - `usuario`
+       - `inscripcion`
+       - `ponencia_ponente`
+       - `sala`
+       - `dia_evento`
+  </Step>
+</Steps>
+
+## Setting Up Authentication
+
+<Steps>
+  <Step title="Configure Email Auth">
+    Supabase email authentication is enabled by default. To configure:
+    
+    1. Go to **Authentication** → **Providers**
+    2. Ensure **Email** is enabled
+    3. Configure email templates (optional):
+       - Navigate to **Authentication** → **Email Templates**
+       - Customize confirmation and password reset emails
+  </Step>
+
+  <Step title="Configure Site URL">
+    Set your application's URL:
+    
+    1. Go to **Authentication** → **URL Configuration**
+    2. Set **Site URL** to:
+       - Development: `http://localhost:5173`
+       - Production: Your production domain
+    3. Add **Redirect URLs**:
+       - `http://localhost:5173/**`
+       - Your production domain with wildcard
+  </Step>
+
+  <Step title="Set Up User Creation Trigger">
+    Automatically create a `usuario` record when a user signs up:
+    
+    ```sql
+    -- Create function to handle new user creation
+    CREATE OR REPLACE FUNCTION public.handle_new_user()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      INSERT INTO public.usuario (id, nombre, email, rol)
+      VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'nombre', ''),
+        NEW.email,
+        'attendee'
+      );
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+    -- Create trigger
+    DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+    CREATE TRIGGER on_auth_user_created
+      AFTER INSERT ON auth.users
+      FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+    ```
+    
+    Run this in the SQL Editor.
+  </Step>
+</Steps>
+
+## Row Level Security (RLS)
+
+Enable RLS to secure your database tables:
+
+<Warning>
+  RLS is crucial for security. Without it, anyone with your anon key can access all data.
+</Warning>
+
+<Steps>
+  <Step title="Enable RLS on Tables">
+    ```sql
+    -- Enable RLS on all tables
+    ALTER TABLE evento ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE ponente ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE ponencia ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE usuario ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE inscripcion ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE ponencia_ponente ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE sala ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE dia_evento ENABLE ROW LEVEL SECURITY;
+    ```
+  </Step>
+
+  <Step title="Create RLS Policies">
+    <Accordion title="Public Read Policies (Click to expand)">
+      Allow all users to read public data:
+      
+      ```sql
+      -- Allow public read access to events
+      CREATE POLICY "Public can view events" ON evento
+        FOR SELECT USING (true);
+
+      -- Allow public read access to speakers
+      CREATE POLICY "Public can view speakers" ON ponente
+        FOR SELECT USING (true);
+
+      -- Allow public read access to presentations
+      CREATE POLICY "Public can view presentations" ON ponencia
+        FOR SELECT USING (true);
+
+      -- Allow public read access to rooms
+      CREATE POLICY "Public can view rooms" ON sala
+        FOR SELECT USING (true);
+
+      -- Allow public read access to event days
+      CREATE POLICY "Public can view event days" ON dia_evento
+        FOR SELECT USING (true);
+
+      -- Allow public read access to presentation-speaker relations
+      CREATE POLICY "Public can view presentation speakers" ON ponencia_ponente
+        FOR SELECT USING (true);
+      ```
+    </Accordion>
+    
+    <Accordion title="User-Specific Policies (Click to expand)">
+      Allow users to manage their own data:
+      
+      ```sql
+      -- Users can read their own profile
+      CREATE POLICY "Users can view own profile" ON usuario
+        FOR SELECT USING (auth.uid() = id);
+
+      -- Users can update their own profile
+      CREATE POLICY "Users can update own profile" ON usuario
+        FOR UPDATE USING (auth.uid() = id);
+
+      -- Users can view their own registrations
+      CREATE POLICY "Users can view own registrations" ON inscripcion
+        FOR SELECT USING (auth.uid() = usuario_id);
+
+      -- Users can create registrations for themselves
+      CREATE POLICY "Users can create own registrations" ON inscripcion
+        FOR INSERT WITH CHECK (auth.uid() = usuario_id);
+
+      -- Users can delete their own registrations
+      CREATE POLICY "Users can delete own registrations" ON inscripcion
+        FOR DELETE USING (auth.uid() = usuario_id);
+      ```
+    </Accordion>
+    
+    <Accordion title="Admin Policies (Click to expand)">
+      Allow admins to manage all data:
+      
+      ```sql
+      -- Admins can do everything (check usuario.rol = 'admin')
+      CREATE POLICY "Admins have full access to events" ON evento
+        FOR ALL USING (
+          EXISTS (
+            SELECT 1 FROM usuario
+            WHERE usuario.id = auth.uid() AND usuario.rol = 'admin'
+          )
+        );
+
+      CREATE POLICY "Admins have full access to speakers" ON ponente
+        FOR ALL USING (
+          EXISTS (
+            SELECT 1 FROM usuario
+            WHERE usuario.id = auth.uid() AND usuario.rol = 'admin'
+          )
+        );
+
+      CREATE POLICY "Admins have full access to presentations" ON ponencia
+        FOR ALL USING (
+          EXISTS (
+            SELECT 1 FROM usuario
+            WHERE usuario.id = auth.uid() AND usuario.rol = 'admin'
+          )
+        );
+
+      CREATE POLICY "Admins have full access to inscriptions" ON inscripcion
+        FOR ALL USING (
+          EXISTS (
+            SELECT 1 FROM usuario
+            WHERE usuario.id = auth.uid() AND usuario.rol = 'admin'
+          )
+        );
+      ```
+    </Accordion>
+  </Step>
+
+  <Step title="Test RLS Policies">
+    1. Create a test user account
+    2. Try accessing data through the API
+    3. Verify users can only access their own data
+    4. Verify public read access works for events and presentations
+  </Step>
+</Steps>
+
+## Sample Data (Optional)
+
+Populate your database with sample data for testing:
+
+<CodeGroup>
+```sql Sample Event
+INSERT INTO evento (nombre, descripcion, fecha_inicio, fecha_fin, ubicacion)
+VALUES (
+  'CONIITI 2026',
+  'Congreso Internacional de Innovación y Tendencias en Ingeniería',
+  '2026-05-15',
+  '2026-05-17',
+  'Universidad Católica de Colombia, Bogotá'
+);
+```
+
+```sql Sample Speaker
+INSERT INTO ponente (nombre, bio, organizacion, email)
+VALUES (
+  'Dr. María García',
+  'Experta en Inteligencia Artificial con 15 años de experiencia',
+  'Universidad Nacional',
+  'maria.garcia@example.com'
+);
+```
+
+```sql Sample Room
+INSERT INTO sala (nombre, capacidad, ubicacion)
+VALUES 
+  ('Auditorio Principal', 500, 'Edificio A - Piso 1'),
+  ('Sala de Conferencias 1', 100, 'Edificio B - Piso 2'),
+  ('Sala Virtual', 1000, 'Online');
+```
+</CodeGroup>
+
+## Database Backup
+
+<Note>
+  Supabase automatically backs up your database daily. For manual backups:
+</Note>
+
+1. Go to **Database** → **Backups**
+2. Click **Create backup**
+3. Download backups for local storage
+
+## Monitoring and Maintenance
+
+### Query Performance
+
+1. Go to **Database** → **Query Performance**
+2. Review slow queries
+3. Add indexes as needed
+
+### Database Usage
+
+1. Go to **Database** → **Reports**
+2. Monitor:
+   - Database size
+   - Connection count
+   - Query performance
+   - API requests
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cannot connect to database">
+    - Verify your `SUPABASE_URL` and keys are correct
+    - Check that your Supabase project is active
+    - Ensure your IP is not blocked (Supabase allows all IPs by default)
+  </Accordion>
+
+  <Accordion title="RLS blocks my queries">
+    - Check that RLS policies are correctly configured
+    - Use the service role key for admin operations
+    - Verify user authentication tokens are valid
+    - Test policies in the SQL Editor with different roles
+  </Accordion>
+
+  <Accordion title="Foreign key constraint errors">
+    - Ensure referenced records exist before inserting
+    - Check that IDs match between tables
+    - Verify ON DELETE CASCADE behavior
+  </Accordion>
+
+  <Accordion title="Slow queries">
+    - Add indexes on frequently queried columns
+    - Use `EXPLAIN ANALYZE` to debug query performance
+    - Consider denormalizing data for read-heavy operations
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="gear" href="/development/environment-variables">
+    Configure your app with Supabase credentials
+  </Card>
+  <Card title="Local Setup" icon="laptop-code" href="/development/local-setup">
+    Start developing locally
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [Supabase Documentation](https://supabase.com/docs)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Row Level Security Guide](https://supabase.com/docs/guides/auth/row-level-security)
+- [Supabase Auth Guide](https://supabase.com/docs/guides/auth)

@@ -1,0 +1,80 @@
+---
+title: 'Authentication Overview'
+description: 'Learn about the CONIITI 2026 authentication system'
+---
+
+## Overview
+
+The CONIITI 2026 API uses Supabase-based authentication to secure endpoints and manage user access. This system provides user registration, profile management, and session handling.
+
+## Authentication Method
+
+All authenticated endpoints require a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer <your-access-token>
+```
+
+## Getting Started
+
+1. **Register a new user** using the `/register` endpoint
+2. **Sign in** through Supabase Auth to receive an access token
+3. **Use the token** to access protected endpoints like profile management
+
+## Base URL
+
+```
+https://api.coniiti2026.com
+```
+
+## Available Endpoints
+
+### Public Endpoints
+- `POST /register` - Register a new user and create their profile
+
+### Protected Endpoints (Require Authentication)
+- `GET /perfil` - Get the authenticated user's profile
+- `POST /perfil` - Create a profile for the authenticated user
+- `PUT /perfil` - Update the authenticated user's profile
+- `GET /` - List all users (admin functionality)
+
+## User Roles
+
+The system supports the following user roles:
+
+- `ESTUDIANTE` - Student users (requires institutional code)
+- `USER` - Default user role
+- Custom roles as defined by the system
+
+## Error Handling
+
+The API returns standard HTTP status codes:
+
+- `200` - Success
+- `201` - Resource created successfully
+- `400` - Bad request (validation errors)
+- `401` - Unauthorized (missing or invalid token)
+- `500` - Internal server error
+
+Error responses follow this format:
+
+```json
+{
+  "error": "Error message describing what went wrong"
+}
+```
+
+## Authentication Flow
+
+1. User registers via `/register` endpoint
+2. Supabase Auth creates the authentication user
+3. System creates a profile in `perfil_usuario` table
+4. User signs in through Supabase to get access token
+5. Access token is used for subsequent authenticated requests
+
+## Security Features
+
+- **Unique validation**: Document numbers and institutional codes are validated for uniqueness
+- **Transactional integrity**: If profile creation fails, the auth user is automatically deleted
+- **Token validation**: All protected routes verify token validity before processing requests
+- **Role-based access**: Different roles have different requirements and permissions

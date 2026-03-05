@@ -1,0 +1,119 @@
+---
+title: "List Events"
+api: "GET /api/eventos"
+description: "Retrieve a list of all events for CONIITI 2026"
+---
+
+## Endpoint
+
+```
+GET /api/eventos
+```
+
+## Authentication
+
+This endpoint is **public** and does not require authentication.
+
+## Request
+
+No parameters required.
+
+## Response
+
+<ResponseField name="data" type="array">
+  Array of event objects
+  
+  <ResponseField name="id" type="string">
+    Unique identifier for the event
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    Name of the event
+  </ResponseField>
+  
+  <ResponseField name="descripcion" type="string">
+    Description of the event
+  </ResponseField>
+  
+  <ResponseField name="fecha_inicio" type="string">
+    Start date and time of the event (ISO 8601 format)
+  </ResponseField>
+  
+  <ResponseField name="fecha_fin" type="string">
+    End date and time of the event (ISO 8601 format)
+  </ResponseField>
+  
+  <ResponseField name="ubicacion" type="string">
+    Location of the event
+  </ResponseField>
+  
+  <ResponseField name="capacidad" type="integer">
+    Maximum capacity for the event
+  </ResponseField>
+  
+  <ResponseField name="created_at" type="string">
+    Timestamp when the event was created
+  </ResponseField>
+  
+  <ResponseField name="updated_at" type="string">
+    Timestamp when the event was last updated
+  </ResponseField>
+</ResponseField>
+
+## Examples
+
+### Request
+
+```bash
+curl -X GET https://api.coniiti2026.com/api/eventos
+```
+
+### Response
+
+<CodeGroup>
+
+```json 200 - Success
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "nombre": "Ceremonia de Inauguración",
+    "descripcion": "Ceremonia de apertura del CONIITI 2026",
+    "fecha_inicio": "2026-03-15T09:00:00Z",
+    "fecha_fin": "2026-03-15T11:00:00Z",
+    "ubicacion": "Auditorio Principal",
+    "capacidad": 500,
+    "created_at": "2026-01-10T08:00:00Z",
+    "updated_at": "2026-01-10T08:00:00Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "nombre": "Taller de Inteligencia Artificial",
+    "descripcion": "Workshop práctico sobre IA y Machine Learning",
+    "fecha_inicio": "2026-03-15T14:00:00Z",
+    "fecha_fin": "2026-03-15T17:00:00Z",
+    "ubicacion": "Sala 201",
+    "capacidad": 50,
+    "created_at": "2026-01-12T10:00:00Z",
+    "updated_at": "2026-01-12T10:00:00Z"
+  }
+]
+```
+
+```json 400 - Error
+{
+  "error": "Error al obtener los eventos"
+}
+```
+
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="error" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+| Status Code | Description |
+|------------|-------------|
+| 200 | Successfully retrieved events list |
+| 400 | Bad request or database error |

@@ -1,0 +1,371 @@
+---
+title: Managing Speakers
+description: Complete guide to adding, editing, and managing conference speakers and guests
+---
+
+## Speaker Management
+
+The speaker management system allows admins to maintain a centralized database of conference guests that can be referenced across multiple conferences.
+
+## Accessing Speaker Management
+
+<Steps>
+  <Step title="Navigate to Invitados Tab">
+    Click the **👥 Invitados** button in the admin sidebar to access speaker management.
+  </Step>
+  
+  <Step title="View Speaker Grid">
+    All registered speakers display in a responsive grid layout with avatar, name, and organization.
+  </Step>
+</Steps>
+
+## Adding a New Speaker
+
+<Note>
+VIEWER role cannot add or edit speakers. Only ADMIN, CONTENT_MANAGER, and SUPER_ADMIN can perform these actions.
+</Note>
+
+<Steps>
+  <Step title="Open the Form">
+    Click **+ Nuevo Invitado** button at the top of the Invitados section.
+    
+    ```tsx
+    // Admin.tsx:897-904
+    <button
+        className="btn-add"
+        onClick={() => setShowGuestForm(!showGuestForm)}
+    >
+        {showGuestForm ? "Cerrar Formulario" : "+ Nuevo Invitado"}
+    </button>
+    ```
+  </Step>
+
+  <Step title="Fill Required Information">
+    Complete all required fields:
+    
+    - **Nombre Completo** (required)
+    - **Organización / Universidad** (required)
+    - **Foto del Invitado** (optional, accepts image files)
+    - **Bio / Perfil Profesional** (required)
+  </Step>
+
+  <Step title="Upload Photo">
+    The system converts uploaded images to base64 for storage:
+    
+    ```typescript
+    // Admin.tsx:461-470
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setNewGuest({ ...newGuest, avatar: reader.result as string })
+            }
+            reader.readAsDataURL(file)
+        }
+    }
+    ```
+    
+    <Warning>
+    Images are stored as base64 in localStorage. Very large images may exceed localStorage limits (~5-10MB depending on browser).
+    </Warning>
+  </Step>
+
+  <Step title="Submit">
+    Click **Guardar Invitado** to save the speaker profile.
+  </Step>
+</Steps>
+
+## Speaker Submission Flow
+
+When you add a speaker, the system follows this process:
+
+```typescript
+// Admin.tsx:472-528
+const handleAddGuest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+        const { createPonente } = await import("../services/api");
+
+        const guestData = {
+            nombre: newGuest.name,
+            organizacion: newGuest.organization,
+            bio: newGuest.bio,
+            avatar_url: newGuest.avatar || "/default-avatar.png"
+        };
+
+        let savedSpeaker;
+        try {
+            // Attempt API save
+            savedSpeaker = await createPonente(guestData);
+        } catch (apiErr) {
+            // Fallback to local simulation
+            console.warn("Error API, using local simulation:", apiErr);
+            savedSpeaker = { ...guestData, id: `local-${Date.now()}` };
+        }
+
+        // Update speakers list (appears in configuration)
+        const updatedSpeakers = [...speakers, savedSpeaker];
+        setSpeakers(updatedSpeakers);
+        localStorage.setItem("site_speakers", JSON.stringify(updatedSpeakers));
+
+        // Create placeholder conference for agenda
+        const simulatedConf = {
+            id: `conf-${Date.now()}`,
+            title: `Conferencia: ${newGuest.name}`,
+            description: newGuest.bio,
+            startTime: new Date().toISOString(),
+            endTime: new Date().toISOString(),
+            location: "Pendiente",
+            category: "General",
+            level: "Básico",
+            speaker: {
+                name: savedSpeaker.nombre || savedSpeaker.name,
+                organization: savedSpeaker.organizacion || savedSpeaker.organization,
+                bio: savedSpeaker.bio,
+                avatar: savedSpeaker.avatar_url || savedSpeaker.avatar
+            }
+        };
+
+        setConferences([...conferences, simulatedConf]);
+        setShowGuestForm(false);
+        setNewGuest({ name: "", organization: "", bio: "", avatar: "" });
+    } catch (err) {
+        console.error("Error adding guest:", err);
+    } finally {
+        setIsLoading(false);
+    }
+}
+```
+
+<Info>
+Adding a speaker automatically creates a placeholder conference entry. This ensures the speaker appears in both the Invitados page and can be assigned to conferences.
+</Info>
+
+## Editing a Speaker
+
+<Steps>
+  <Step title="Open Edit Modal">
+    Click the **✏️ Editar Perfil** button on any speaker card.
+  </Step>
+
+  <Step title="Modify Information">
+    Update any field in the modal form:
+    - Name
+    - Organization
+    - Bio
+    - Avatar (upload new photo)
+  </Step>
+
+  <Step title="Save Changes">
+    Changes propagate to all conferences using this speaker:
+    
+    ```typescript
+    // Admin.tsx:530-556
+    const handleSaveSpeakerEdit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Update speakers list
+        const updated = speakers.map(s => 
+            s.id === editingSpeaker.id ? editingSpeaker : s
+        );
+        setSpeakers(updated);
+        localStorage.setItem("site_speakers", JSON.stringify(updated));
+
+        // Update speaker info across ALL conferences
+        const updatedConfs = conferences.map(c => {
+            if (c.speaker?.id === editingSpeaker.id || 
+                c.speaker?.name === (editingSpeaker.nombre || editingSpeaker.name)) {
+                return {
+                    ...c,
+                    speaker: {
+                        ...c.speaker,
+                        name: editingSpeaker.nombre || editingSpeaker.name,
+                        organization: editingSpeaker.organizacion || editingSpeaker.organization,
+                        avatar: editingSpeaker.avatar_url || editingSpeaker.avatar,
+                        bio: editingSpeaker.bio
+                    }
+                };
+            }
+            return c;
+        });
+        setConferences(updatedConfs);
+        setEditingSpeaker(null);
+    };
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+Editing a speaker's information automatically updates all conferences where that speaker is assigned, ensuring consistency across the system.
+</Tip>
+
+## Speaker Data Structure
+
+Speakers in the system follow this schema:
+
+```typescript
+interface Speaker {
+    id: string                    // Unique identifier
+    nombre: string                // Full name
+    organizacion: string          // Organization/University
+    bio: string                   // Professional biography
+    avatar_url: string            // Photo URL or base64
+}
+```
+
+## Speaker Initialization
+
+On dashboard load, the system aggregates speakers from multiple sources:
+
+```typescript
+// Admin.tsx:99-134
+const [speakers, setSpeakers] = useState<any[]>(() => {
+    // Initialize from mocks + localStorage
+    const conferenceSource = (() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem("site_conferences") || '[]');
+            return saved.length > 0 ? saved : initialConferences;
+        } catch { return initialConferences; }
+    })();
+    
+    const seedSpeakers: any[] = [];
+    const seen = new Set<string>();
+    
+    // Extract speakers from conferences
+    conferenceSource.forEach((c: any) => {
+        const name = c.speaker?.name || c.speaker?.nombre;
+        if (name && !seen.has(name)) {
+            seedSpeakers.push({
+                id: `seed-${c.id}`,
+                nombre: name,
+                organizacion: c.speaker.organization || c.speaker.organizacion || '',
+                bio: c.speaker.bio || '',
+                avatar_url: c.speaker.avatar || c.speaker.avatar_url || '/default-avatar.png'
+            });
+            seen.add(name);
+        }
+    });
+    
+    // Add locally saved speakers
+    try {
+        const local = JSON.parse(localStorage.getItem('site_speakers') || '[]');
+        local.forEach((ls: any) => {
+            const lsName = ls.nombre || ls.name;
+            if (lsName && !seen.has(lsName)) {
+                seedSpeakers.push(ls);
+                seen.add(lsName);
+            }
+        });
+    } catch { /* no local data */ }
+    
+    return seedSpeakers;
+})
+```
+
+## Speaker Display
+
+Speakers render in a responsive grid with fallback for empty states:
+
+```tsx
+// Admin.tsx:956-992
+<div className="guests-grid">
+    {speakers.length === 0 ? (
+        <div style={{
+            gridColumn: '1/-1',
+            textAlign: 'center',
+            padding: '3rem',
+            background: '#f8fafc',
+            borderRadius: '12px',
+            border: '2px dashed #e2e8f0'
+        }}>
+            <p style={{ fontSize: '2rem' }}>👥</p>
+            <p style={{ fontWeight: '600' }}>No hay invitados aún</p>
+            <p style={{ fontSize: '0.85rem' }}>Agrega tu primer invitado con el botón de arriba.</p>
+        </div>
+    ) : (
+        speakers.map((speaker: any) => (
+            <div key={speaker.id} className="guest-admin-card fade-in">
+                <img src={speaker.avatar_url || speaker.avatar || "/default-avatar.png"} 
+                     alt={speaker.nombre || speaker.name} />
+                <div className="guest-info">
+                    <h4>{speaker.nombre || speaker.name}</h4>
+                    <p>{speaker.organizacion || speaker.organization}</p>
+                </div>
+                {userRole !== "VIEWER" && (
+                    <div className="guest-actions">
+                        <button className="btn-edit-sm" 
+                                onClick={() => setEditingSpeaker(speaker)}>
+                            ✏️ Editar Perfil
+                        </button>
+                    </div>
+                )}
+            </div>
+        ))
+    )}
+</div>
+```
+
+## Using Speakers in Conferences
+
+When creating or editing conferences, speakers appear in a dropdown:
+
+```tsx
+<select
+    className="admin-select"
+    required
+    value={newConf.speakerName}
+    onChange={e => setNewConf({ ...newConf, speakerName: e.target.value })}
+>
+    <option value="">-- Selecciona un invitado --</option>
+    {speakers.map((s, idx) => (
+        <option key={idx} value={s.name}>
+            {s.name} ({s.organization})
+        </option>
+    ))}
+    <option value="OTRO">+ Otro (Escribir nombre)</option>
+</select>
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Photo Optimization">
+    - Compress images before upload to avoid localStorage limits
+    - Recommended size: 400x400px or smaller
+    - Supported formats: JPG, PNG, WebP
+    - Maximum recommended size: 200KB per image
+  </Accordion>
+
+  <Accordion title="Bio Guidelines">
+    - Keep bios concise (2-3 sentences)
+    - Highlight relevant expertise
+    - Mention current affiliation
+    - Use professional tone
+  </Accordion>
+
+  <Accordion title="Data Consistency">
+    - Use full official names
+    - Verify organization spelling
+    - Update speaker info before major conferences
+    - Regularly audit for duplicate entries
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Speaker not appearing in dropdown">
+    Speakers must be created in the Invitados section before appearing in conference creation forms. Refresh the page after adding a speaker if they don't appear immediately.
+  </Accordion>
+
+  <Accordion title="Photo upload fails">
+    If photo upload fails, the image may be too large. Try compressing it or using a different format. The system falls back to `/default-avatar.png` if no photo is provided.
+  </Accordion>
+
+  <Accordion title="Changes not persisting">
+    Check browser console for localStorage errors. Some browsers limit localStorage to 5-10MB. Clear old data or reduce image sizes if approaching limits.
+  </Accordion>
+</AccordionGroup>

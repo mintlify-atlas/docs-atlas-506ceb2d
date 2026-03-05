@@ -1,0 +1,230 @@
+---
+title: 'Backend Project Structure'
+description: 'Understanding the Express + TypeScript backend architecture'
+---
+
+## Overview
+
+The CONIITI 2026 backend is built with **Express.js** and **TypeScript**, following a modular architecture pattern. The project emphasizes separation of concerns with dedicated directories for configuration, middleware, and feature modules.
+
+## Directory Structure
+
+```
+src/
+├── app.ts                    # Express app configuration
+├── server.ts                 # Server entry point
+├── config/                   # Configuration files
+│   └── supabase.ts          # Supabase client setup
+├── middleware/               # Express middleware
+│   └── auth.middleware.ts   # Authentication middleware
+└── modules/                  # Feature modules
+    ├── evento/              # Event management
+    ├── inscripcion/         # Registration management
+    ├── ponencia/            # Presentation management
+    ├── ponente/             # Speaker management
+    └── usuario/             # User management
+```
+
+## Core Files
+
+### app.ts
+
+The main Express application configuration file. It sets up middleware and registers all module routes.
+
+**Source:** `src/app.ts`
+
+```typescript
+import express from 'express'
+import cors from 'cors'
+
+import usuarioRoutes from './modules/usuario/usuario.routes'
+import eventoRoutes from './modules/evento/evento.routes'
+import ponencias from './modules/ponencia/ponencia.routes'
+import inscripciones from './modules/inscripcion/inscripcion.routes'
+import ponentes from './modules/ponente/ponente.routes'
+
+const app = express()
+
+// Middleware
+app.use(cors())
+app.use(express.json())
+
+// Route registration
+app.use('/api/usuarios', usuarioRoutes)
+app.use('/api/eventos', eventoRoutes)
+app.use('/api/ponencias', ponencias)
+app.use('/api/inscripciones', inscripciones)
+app.use('/api/ponentes', ponentes)
+
+export default app
+```
+
+**Key responsibilities:**
+- Configure CORS for cross-origin requests
+- Parse JSON request bodies
+- Register module routes under `/api/*` prefix
+- Export configured Express app
+
+### server.ts
+
+The application entry point that starts the HTTP server.
+
+**Source:** `src/server.ts`
+
+```typescript
+import 'dotenv/config'
+import app from './app'
+
+const PORT = process.env.PORT || 3000
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en: http://localhost:${PORT}`)
+})
+```
+
+**Key responsibilities:**
+- Load environment variables via dotenv
+- Start the Express server on configured port
+- Provide startup confirmation logging
+
+## Configuration Directory
+
+The `config/` directory contains application-wide configuration files.
+
+### supabase.ts
+
+Sets up Supabase client instances for database and authentication operations.
+
+**Source:** `src/config/supabase.ts:1-15`
+
+See [Supabase Integration](/development/backend/supabase-integration) for detailed documentation.
+
+## Middleware Directory
+
+The `middleware/` directory contains Express middleware functions.
+
+### auth.middleware.ts
+
+Provides JWT token validation and user authentication.
+
+**Source:** `src/middleware/auth.middleware.ts:1-31`
+
+See [Authentication](/development/backend/authentication) for detailed documentation.
+
+## Modules Directory
+
+The `modules/` directory contains feature-based modules. Each module follows a consistent structure:
+
+- **routes.ts** - Express router and endpoint definitions
+- **controller.ts** - Request/response handlers
+- **service.ts** - Business logic and database operations
+- **dto.ts** - Data transfer objects and validation schemas (optional)
+
+### Available Modules
+
+| Module | Description | Endpoint |
+|--------|-------------|----------|
+| `usuario` | User management and authentication | `/api/usuarios` |
+| `evento` | Event management | `/api/eventos` |
+| `ponencia` | Presentation submissions | `/api/ponencias` |
+| `ponente` | Speaker management | `/api/ponentes` |
+| `inscripcion` | Event registrations | `/api/inscripciones` |
+
+See [Modules](/development/backend/modules) for detailed module documentation.
+
+## Technology Stack
+
+### Core Dependencies
+
+```json
+{
+  "express": "^5.2.1",
+  "@supabase/supabase-js": "^2.97.0",
+  "cors": "^2.8.6",
+  "dotenv": "^17.3.1",
+  "zod": "^4.3.6"
+}
+```
+
+### Development Tools
+
+```json
+{
+  "typescript": "^5.9.3",
+  "nodemon": "^3.1.13",
+  "ts-node-dev": "^2.0.0",
+  "@types/express": "^5.0.6",
+  "@types/cors": "^2.8.19",
+  "@types/node": "^25.3.0"
+}
+```
+
+## Development Workflow
+
+### Running the Server
+
+```bash
+# Development with hot reload
+npm run dev
+
+# Build TypeScript
+npm run build
+
+# Production
+npm start
+```
+
+### Environment Variables
+
+Create a `.env` file in the backend root:
+
+```bash
+PORT=3000
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+## Architecture Principles
+
+### Separation of Concerns
+
+The architecture strictly separates:
+- **Routes** - HTTP endpoint definitions
+- **Controllers** - Request/response handling
+- **Services** - Business logic and data access
+- **Middleware** - Cross-cutting concerns (auth, logging)
+- **Config** - Application configuration
+
+### Modular Design
+
+Each feature is self-contained in its own module directory, making the codebase:
+- Easy to navigate
+- Simple to test in isolation
+- Straightforward to extend with new features
+- Clear ownership of responsibilities
+
+### Type Safety
+
+TypeScript provides compile-time type checking across:
+- Request/response objects
+- Database schemas
+- Service interfaces
+- Configuration objects
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Module Pattern" icon="puzzle-piece" href="/development/backend/modules">
+    Learn the module structure pattern
+  </Card>
+  <Card title="Authentication" icon="lock" href="/development/backend/authentication">
+    Implement authentication middleware
+  </Card>
+  <Card title="Supabase Integration" icon="database" href="/development/backend/supabase-integration">
+    Work with Supabase clients
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/authentication/overview">
+    Explore API endpoints
+  </Card>
+</CardGroup>

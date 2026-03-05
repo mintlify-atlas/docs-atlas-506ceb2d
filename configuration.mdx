@@ -1,0 +1,436 @@
+---
+title: 'Configuration'
+description: 'Configure environment variables and Supabase for CONIITI 2026'
+---
+
+## Overview
+
+CONIITI 2026 requires configuration for both frontend and backend components. This guide covers all necessary environment variables and Supabase setup.
+
+<Warning>
+  Never commit `.env` files to version control. These files contain sensitive credentials.
+</Warning>
+
+## Supabase Setup
+
+CONIITI 2026 uses Supabase for authentication and database management.
+
+<Steps>
+  <Step title="Create a Supabase Project">
+    1. Go to [supabase.com](https://supabase.com)
+    2. Sign in or create an account
+    3. Click "New Project"
+    4. Fill in project details:
+       - Project name: `coniiti-2026`
+       - Database password: (save this securely)
+       - Region: Choose closest to your users
+    5. Click "Create new project"
+    
+    <Note>
+      Project creation takes 1-2 minutes. Wait for it to complete.
+    </Note>
+  </Step>
+
+  <Step title="Get API Keys">
+    Once your project is ready:
+    
+    1. Navigate to **Settings** → **API**
+    2. Copy the following values:
+       - **Project URL** (e.g., `https://xxxxx.supabase.co`)
+       - **anon public** key
+       - **service_role** key (keep this secret!)
+    
+    <Warning>
+      The `service_role` key has admin privileges. Never expose it in frontend code or public repositories.
+    </Warning>
+  </Step>
+
+  <Step title="Configure Database Tables">
+    Set up the required database tables in Supabase SQL Editor:
+    
+    ```sql
+    -- Users table (extends Supabase auth.users)
+    CREATE TABLE usuarios (
+      id UUID PRIMARY KEY REFERENCES auth.users(id),
+      full_name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      rol TEXT CHECK (rol IN ('ESTUDIANTE', 'DOCENTE', 'PROFESIONAL', 'ADMIN')),
+      career TEXT,
+      gender TEXT,
+      document_number TEXT,
+      document_type TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    
+    -- Events table
+    CREATE TABLE eventos (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      titulo TEXT NOT NULL,
+      descripcion TEXT,
+      fecha_inicio TIMESTAMP NOT NULL,
+      fecha_fin TIMESTAMP NOT NULL,
+      ubicacion TEXT,
+      capacidad_maxima INTEGER,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    
+    -- Speakers table
+    CREATE TABLE ponentes (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      nombre TEXT NOT NULL,
+      biografia TEXT,
+      foto_url TEXT,
+      especialidad TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    
+    -- Presentations table
+    CREATE TABLE ponencias (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      evento_id UUID REFERENCES eventos(id) ON DELETE CASCADE,
+      ponente_id UUID REFERENCES ponentes(id) ON DELETE CASCADE,
+      titulo TEXT NOT NULL,
+      descripcion TEXT,
+      fecha TIMESTAMP NOT NULL,
+      duracion INTEGER,
+      sala TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    
+    -- Registrations table
+    CREATE TABLE inscripciones (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
+      evento_id UUID REFERENCES eventos(id) ON DELETE CASCADE,
+      ponencia_id UUID REFERENCES ponencias(id) ON DELETE SET NULL,
+      estado TEXT CHECK (estado IN ('PENDIENTE', 'CONFIRMADO', 'ASISTIDO', 'CANCELADO')),
+      fecha_inscripcion TIMESTAMP DEFAULT NOW(),
+      qr_code TEXT,
+      UNIQUE(usuario_id, evento_id)
+    );
+    ```
+  </Step>
+
+  <Step title="Enable Row Level Security (Optional)">
+    For production, enable RLS policies:
+    
+    ```sql
+    -- Enable RLS
+    ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE eventos ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE ponentes ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE ponencias ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE inscripciones ENABLE ROW LEVEL SECURITY;
+    
+    -- Example policy: Users can read their own data
+    CREATE POLICY "Users can view own data" ON usuarios
+      FOR SELECT USING (auth.uid() = id);
+    
+    -- Example policy: Anyone can view events
+    CREATE POLICY "Events are publicly readable" ON eventos
+      FOR SELECT USING (true);
+    ```
+  </Step>
+</Steps>
+
+## Backend Configuration
+
+Create a `.env` file in the `backend/` directory:
+
+<CodeGroup>
+  ```bash Development (.env)
+  # Server Configuration
+  PORT=3000
+  NODE_ENV=development
+  
+  # Supabase Configuration
+  SUPABASE_URL=https://your-project-id.supabase.co
+  SUPABASE_ANON_KEY=your-anon-key-here
+  SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+  ```
+  
+  ```bash Production (.env.production)
+  # Server Configuration
+  PORT=10000
+  NODE_ENV=production
+  
+  # Supabase Configuration
+  SUPABASE_URL=https://your-project-id.supabase.co
+  SUPABASE_ANON_KEY=your-anon-key-here
+  SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+  ```
+</CodeGroup>
+
+### Backend Environment Variables
+
+<ParamField path="PORT" type="number" default="3000">
+  Port number for the Express server
+</ParamField>
+
+<ParamField path="NODE_ENV" type="string" default="development">
+  Environment mode: `development` or `production`
+</ParamField>
+
+<ParamField path="SUPABASE_URL" type="string" required>
+  Your Supabase project URL from the API settings
+</ParamField>
+
+<ParamField path="SUPABASE_ANON_KEY" type="string" required>
+  Public anonymous key for client-side operations
+</ParamField>
+
+<ParamField path="SUPABASE_SERVICE_ROLE_KEY" type="string" required>
+  Service role key for admin operations (backend only)
+</ParamField>
+
+### Backend Supabase Client Usage
+
+The backend uses two Supabase clients:
+
+```typescript backend/src/config/supabase.ts
+import { createClient } from '@supabase/supabase-js'
+
+// Public client (validate tokens)
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+)
+
+// Admin client (for secure operations)
+export const admin_supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+)
+```
+
+<Info>
+  The `supabase` client is for validating user tokens, while `admin_supabase` bypasses RLS for administrative operations.
+</Info>
+
+## Frontend Configuration
+
+Create a `.env` file in the `frontend/vite-project/` directory:
+
+<CodeGroup>
+  ```bash Development (.env)
+  # API Configuration
+  VITE_API_URL=http://localhost:3000/api
+  
+  # Supabase Configuration
+  VITE_SUPABASE_URL=https://your-project-id.supabase.co
+  VITE_SUPABASE_ANON_KEY=your-anon-key-here
+  ```
+  
+  ```bash Production (.env.production)
+  # API Configuration
+  VITE_API_URL=https://coniiti-2026-backend.onrender.com/api
+  
+  # Supabase Configuration
+  VITE_SUPABASE_URL=https://your-project-id.supabase.co
+  VITE_SUPABASE_ANON_KEY=your-anon-key-here
+  ```
+</CodeGroup>
+
+### Frontend Environment Variables
+
+<ParamField path="VITE_API_URL" type="string" required>
+  Base URL for the backend API
+  
+  - Development: `http://localhost:3000/api`
+  - Production: Your deployed backend URL
+</ParamField>
+
+<ParamField path="VITE_SUPABASE_URL" type="string" required>
+  Your Supabase project URL (same as backend)
+</ParamField>
+
+<ParamField path="VITE_SUPABASE_ANON_KEY" type="string" required>
+  Public anonymous key (same as backend)
+  
+  <Warning>
+    Only use the `anon` key in frontend. Never use `service_role` key!
+  </Warning>
+</ParamField>
+
+### Accessing Environment Variables in Frontend
+
+Vite exposes environment variables prefixed with `VITE_`:
+
+```typescript Example Usage
+// Accessing API URL
+const apiUrl = import.meta.env.VITE_API_URL
+
+// Making API request
+fetch(`${apiUrl}/eventos`)
+  .then(res => res.json())
+  .then(data => console.log(data))
+
+// Initializing Supabase client
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+)
+```
+
+## API Endpoints
+
+Once configured, the following API endpoints are available:
+
+<CardGroup cols={2}>
+  <Card title="Users" icon="users">
+    - `POST /api/usuarios/register` - Register new user
+    - `POST /api/usuarios/login` - User login
+    - `GET /api/usuarios/profile` - Get user profile
+  </Card>
+  
+  <Card title="Events" icon="calendar">
+    - `GET /api/eventos` - List all events
+    - `POST /api/eventos` - Create event
+    - `GET /api/eventos/:id` - Get event details
+    - `PUT /api/eventos/:id` - Update event
+    - `DELETE /api/eventos/:id` - Delete event
+  </Card>
+  
+  <Card title="Speakers" icon="microphone">
+    - `GET /api/ponentes` - List speakers
+    - `POST /api/ponentes` - Create speaker
+    - `GET /api/ponentes/:id` - Get speaker details
+    - `PUT /api/ponentes/:id` - Update speaker
+    - `DELETE /api/ponentes/:id` - Delete speaker
+  </Card>
+  
+  <Card title="Presentations" icon="presentation">
+    - `GET /api/ponencias` - List presentations
+    - `POST /api/ponencias` - Create presentation
+    - `GET /api/ponencias/:id` - Get presentation details
+    - `PUT /api/ponencias/:id` - Update presentation
+    - `DELETE /api/ponencias/:id` - Delete presentation
+  </Card>
+</CardGroup>
+
+## Testing the Configuration
+
+Verify your configuration is working:
+
+<Tabs>
+  <Tab title="Backend Test">
+    Test the backend API:
+    
+    ```bash
+    curl http://localhost:3000/api/eventos
+    ```
+    
+    Or test user registration:
+    
+    ```javascript
+    fetch('http://localhost:3000/api/usuarios/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullName: "Test User",
+        email: "test@example.com",
+        password: "SecurePass123!",
+        rol: "ESTUDIANTE",
+        career: "Ingeniería de Sistemas",
+        gender: "Masculino",
+        documentNumber: "123456789",
+        documentType: "CC"
+      })
+    })
+    .then(res => res.json())
+    .then(console.log)
+    ```
+  </Tab>
+  
+  <Tab title="Frontend Test">
+    Open browser console at `http://localhost:5173` and run:
+    
+    ```javascript
+    console.log('API URL:', import.meta.env.VITE_API_URL)
+    console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
+    console.log('Has Anon Key:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
+    ```
+    
+    All values should be defined.
+  </Tab>
+</Tabs>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Environment Variable Security">
+    1. **Never commit** `.env` files to Git
+    2. Add `.env*` to `.gitignore`
+    3. Use `.env.example` for documentation:
+       ```bash
+       SUPABASE_URL=your_url_here
+       SUPABASE_ANON_KEY=your_key_here
+       ```
+    4. Rotate keys if accidentally exposed
+  </Accordion>
+  
+  <Accordion title="Supabase Security">
+    1. **Enable RLS** (Row Level Security) for all tables
+    2. **Never expose** `service_role` key in frontend
+    3. **Use policies** to restrict data access
+    4. **Enable email verification** in Supabase Auth settings
+    5. **Configure CORS** properly in Supabase dashboard
+  </Accordion>
+  
+  <Accordion title="Production Checklist">
+    - [ ] All environment variables set in hosting platform
+    - [ ] Database RLS policies enabled
+    - [ ] CORS configured for production domain
+    - [ ] API rate limiting enabled
+    - [ ] HTTPS enabled
+    - [ ] Error logging configured
+    - [ ] Backup strategy in place
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Supabase Connection Failed">
+    **Symptoms**: API returns 401 or connection errors
+    
+    **Solutions**:
+    1. Verify `SUPABASE_URL` is correct (check for typos)
+    2. Ensure `SUPABASE_ANON_KEY` matches your project
+    3. Check project is not paused (free tier limitation)
+    4. Verify network can reach Supabase (firewall/proxy)
+  </Accordion>
+  
+  <Accordion title="CORS Errors">
+    **Symptoms**: Browser console shows CORS policy errors
+    
+    **Solutions**:
+    1. Check backend has `cors()` middleware enabled
+    2. Verify `VITE_API_URL` matches backend URL exactly
+    3. In Supabase dashboard, add frontend URL to allowed origins
+    4. Ensure requests include proper headers
+  </Accordion>
+  
+  <Accordion title="Environment Variables Not Loading">
+    **Symptoms**: `undefined` when accessing `import.meta.env.VITE_*`
+    
+    **Solutions**:
+    1. Ensure variable name starts with `VITE_`
+    2. Restart Vite dev server after changing `.env`
+    3. Check `.env` file is in correct directory
+    4. Verify no syntax errors in `.env` file
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api/authentication/overview">
+    Explore available API endpoints in detail
+  </Card>
+  <Card title="Authentication" icon="lock" href="/api/authentication/overview">
+    Learn about user authentication flow
+  </Card>
+</CardGroup>

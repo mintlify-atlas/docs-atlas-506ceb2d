@@ -1,0 +1,467 @@
+---
+title: User Management
+description: Guide to managing registered users and viewing user analytics in the CONIITI 2026 admin panel
+---
+
+## User Management
+
+The user management system allows SUPER_ADMIN to view all registered conference attendees, analyze registration data, and track user engagement.
+
+<Warning>
+User management features are **exclusively available to SUPER_ADMIN** users. ADMIN, CONTENT_MANAGER, and VIEWER roles cannot access this section.
+</Warning>
+
+## Accessing User Data
+
+<Steps>
+  <Step title="Navigate to Users Tab">
+    Click **👤 Usuarios** in the admin sidebar (only visible to SUPER_ADMIN).
+  </Step>
+
+  <Step title="View Registered Users">
+    All registered users display in a comprehensive table with key information.
+  </Step>
+</Steps>
+
+## User Data Loading
+
+The system aggregates user data from multiple sources during admin panel initialization:
+
+```typescript
+// Admin.tsx:138-220 (fetchAllData function)
+const fetchAllData = async () => {
+    setIsLoading(true);
+    let usuariosData: any[] = [];
+
+    try {
+        const { getUsuarios } = await import("../services/api");
+        
+        // Fetch from API
+        try { 
+            usuariosData = await getUsuarios(); 
+        } catch (e) { 
+            console.warn("API Usuarios failed"); 
+        }
+
+        // Merge with localStorage users
+        const localUsers = JSON.parse(localStorage.getItem('usuarios_locales') || '[]');
+        const transformedLocal = localUsers.map((u: any) => ({
+            id: u.documentNumber || `local-${u.email}`,
+            nombre_completo: u.fullName,
+            email: u.email,
+            rol: u.role,
+            carrera: u.career,
+            created_at: new Date().toISOString()
+        }));
+
+        // Deduplicate by email
+        const dbEmails = new Set(usuariosData.map((u: any) => u.email));
+        const uniqueLocals = transformedLocal.filter((u: any) => !dbEmails.has(u.email));
+        setRegisteredUsers([...usuariosData, ...uniqueLocals]);
+
+    } catch (err) {
+        console.error("Error fetching users:", err);
+    } finally {
+        setIsLoading(false);
+    }
+}
+```
+
+<Info>
+The system merges users from:
+1. **Supabase Database** (via `/api/usuarios` endpoint)
+2. **LocalStorage** (users registered while API was unavailable)
+3. Deduplication ensures no duplicate entries by email
+</Info>
+
+## User Data Structure
+
+Users retrieved from the API follow this schema:
+
+```typescript
+interface Usuario {
+    id: string                        // Document number or generated ID
+    nombre_completo: string           // Full name
+    email: string                     // Email address (unique)
+    rol: string                       // User role (ATTENDEE, SPEAKER, etc.)
+    carrera: string                   // Academic program
+    genero?: string                   // Gender for analytics
+    created_at: string                // ISO timestamp
+}
+```
+
+## API Integration
+
+User data is fetched via the API service:
+
+```typescript
+// services/api.ts:75
+export const getUsuarios = () => apiFetch('/usuarios');
+```
+
+The backend endpoint returns user profiles from the `usuario` table in Supabase, joining with authentication data.
+
+## User Display
+
+While the specific user table rendering is not shown in the provided Admin.tsx excerpt, the typical implementation would include:
+
+```tsx
+{activeTab === "users" && (
+    <div className="admin-view">
+        <div className="view-header">
+            <h2>Usuarios Registrados</h2>
+            <p>{registeredUsers.length} usuarios en total</p>
+        </div>
+        
+        <table className="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Completo</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Carrera</th>
+                    <th>Fecha de Registro</th>
+                </tr>
+            </thead>
+            <tbody>
+                {registeredUsers.map((user: any) => (
+                    <tr key={user.id}>
+                        <td>{user.id}</td>
+                        <td>{user.nombre_completo}</td>
+                        <td>{user.email}</td>
+                        <td>{user.rol}</td>
+                        <td>{user.carrera}</td>
+                        <td>{new Date(user.created_at).toLocaleDateString()}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
+)}
+```
+
+## User Analytics
+
+SUPER_ADMIN can access detailed user analytics in the **📊 Analíticas** section.
+
+### Gender Distribution
+
+View registration breakdown by gender:
+
+```typescript
+// utils/tracker.ts (referenced in Admin.tsx:4)
+export const getGenderStats = () => {
+    const users = JSON.parse(localStorage.getItem('usuarios_locales') || '[]');
+    const counts = users.reduce((acc: any, user: any) => {
+        const gender = user.gender || 'No especificado';
+        acc[gender] = (acc[gender] || 0) + 1;
+        return acc;
+    }, {});
+    
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+}
+```
+
+Display as pie or bar chart:
+
+```tsx
+// Admin.tsx:1760-1799
+<div className="analytics-card premium-card">
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <h4>Distribución por Género</h4>
+        <select
+            value={chartTypes.gender}
+            onChange={(e) => setChartTypes({ ...chartTypes, gender: e.target.value })}
+        >
+            <option value="pie">Pastel</option>
+            <option value="bar">Barras</option>
+        </select>
+    </div>
+    <ResponsiveContainer width="100%" height={300}>
+        {chartTypes.gender === 'pie' ? (
+            <PieChart>
+                <Pie data={getGenderStats()} cx="50%" cy="50%" 
+                     outerRadius={100} label dataKey="value">
+                    <Cell fill="#3498db" />  {/* Male */}
+                    <Cell fill="#e91e63" />  {/* Female */}
+                    <Cell fill="#95a5a6" />  {/* Other */}
+                </Pie>
+                <Tooltip />
+                <Legend />
+            </PieChart>
+        ) : (
+            <BarChart data={getGenderStats()}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#3498db">
+                    <Cell fill="#3498db" />
+                    <Cell fill="#e91e63" />
+                    <Cell fill="#95a5a6" />
+                </Bar>
+            </BarChart>
+        )}
+    </ResponsiveContainer>
+</div>
+```
+
+### Conference Registration Stats
+
+Track which conferences have the most registrations:
+
+```typescript
+// Admin.tsx:1802-1834
+<div className="analytics-card premium-card">
+    <h4>Inscripciones por Conferencia</h4>
+    <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={getConferenceStats()} layout="vertical">
+            <XAxis type="number" />
+            <YAxis dataKey="name" type="category" width={100} />
+            <Tooltip />
+            <Bar dataKey="value" fill="#2ecc71" radius={[0, 4, 4, 0]} />
+        </BarChart>
+    </ResponsiveContainer>
+</div>
+```
+
+### Page View Analytics
+
+Monitor user engagement across site pages:
+
+```typescript
+// Admin.tsx:1716-1758
+<div className="analytics-card premium-card">
+    <h4>Vistas por Página</h4>
+    <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={getPageViewsStats()}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="value" fill="#375fe4" radius={[4, 4, 0, 0]} />
+        </BarChart>
+    </ResponsiveContainer>
+</div>
+```
+
+### Activity Timeline
+
+View chronological user activity log:
+
+```tsx
+// Admin.tsx:1836-1848
+<div className="analytics-card premium-card">
+    <h4>Historial de Actividad Global</h4>
+    <div style={{ maxHeight: '250px', overflowY: 'auto', fontSize: '0.8rem' }}>
+        {getEvents().map((log, i) => (
+            <div key={i} style={{ 
+                padding: '10px 0', 
+                borderBottom: '1px solid #f0f0f0',
+                display: 'flex',
+                justifyContent: 'space-between' 
+            }}>
+                <span>
+                    <strong style={{ color: 'var(--primary-color)' }}>{log.type}</strong> 
+                    en {log.path}
+                </span>
+                <span style={{ color: '#888' }}>{log.timestamp}</span>
+            </div>
+        ))}
+    </div>
+</div>
+```
+
+## Performance Metrics (SUPER_ADMIN Only)
+
+Access advanced performance analytics via **⏱️ Rendimiento** tab:
+
+```typescript
+// Admin.tsx:629-634
+<button
+    className={activeTab === "performance" ? "active" : ""}
+    onClick={() => setActiveTab("performance")}
+>
+    ⏱️ Rendimiento
+</button>
+```
+
+Performance tracking includes:
+- Page load times
+- Image load statistics
+- Resource size analysis
+- Per-page performance metrics
+
+```typescript
+// Admin.tsx:4 imports
+import { 
+    getEvents, 
+    getGenderStats, 
+    getConferenceStats, 
+    getPageViewsStats, 
+    getLoadTimeStats,      // Load time analytics
+    getImageLoadStats,     // Image performance
+    getResourceSizeStats,  // Resource size tracking
+    getAdvancedStatsByPage // Per-page deep dive
+} from "../utils/tracker"
+```
+
+### Page-Specific Performance
+
+Select a page to view detailed metrics:
+
+```tsx
+<select
+    value={selectedPerfPage}
+    onChange={(e) => setSelectedPerfPage(e.target.value)}
+>
+    <option value="/">Home</option>
+    <option value="/agenda">Agenda</option>
+    <option value="/invitados">Invitados</option>
+    <option value="/admin">Admin Panel</option>
+</select>
+
+{/* Display advanced stats for selected page */}
+<ResponsiveContainer width="100%" height={300}>
+    <LineChart data={getAdvancedStatsByPage(selectedPerfPage)}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="timestamp" />
+        <YAxis />
+        <Tooltip />
+        <Line type="monotone" dataKey="loadTime" stroke="#8884d8" />
+        <Line type="monotone" dataKey="resourceSize" stroke="#82ca9d" />
+    </LineChart>
+</ResponsiveContainer>
+```
+
+## User Roles
+
+The system supports multiple user roles with different access levels:
+
+| Role | Access Level | Typical User |
+|------|--------------|-------------|
+| **SUPER_ADMIN** | Full system access | System administrators |
+| **ADMIN** | Event management | Event coordinators |
+| **CONTENT_MANAGER** | Content editing | Content editors |
+| **VIEWER** | Read-only | Auditors, stakeholders |
+| **ATTENDEE** | Public user | Conference attendees |
+| **SPEAKER** | Speaker portal | Conference speakers |
+
+<Info>
+Roles are stored in the `user_session` object in localStorage and verified on component mount.
+</Info>
+
+## Data Export
+
+While not explicitly implemented in the visible code, user data can be exported via browser console:
+
+```javascript
+// Export users to CSV
+const users = JSON.parse(localStorage.getItem('usuarios_locales') || '[]');
+const csv = users.map(u => 
+    `${u.fullName},${u.email},${u.career},${u.documentNumber}`
+).join('\n');
+console.log('Name,Email,Career,Document\n' + csv);
+```
+
+<Tip>
+For production systems, implement a proper export button that generates CSV or Excel files for user data backup and analysis.
+</Tip>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Privacy Compliance">
+    - Only collect necessary user information
+    - Implement proper data retention policies
+    - Provide users with data access/deletion options
+    - Comply with GDPR, CCPA, or local data protection laws
+    - Secure localStorage data (consider encryption for sensitive info)
+  </Accordion>
+
+  <Accordion title="Data Integrity">
+    - Validate email formats during registration
+    - Prevent duplicate registrations (check by email)
+    - Regularly backup user data from API
+    - Implement data reconciliation between localStorage and API
+    - Log all user management actions for audit trails
+  </Accordion>
+
+  <Accordion title="Analytics Usage">
+    - Review analytics weekly to identify trends
+    - Monitor registration patterns near event date
+    - Track popular sessions for venue planning
+    - Use gender data for diversity reporting
+    - Analyze page views to optimize content placement
+  </Accordion>
+
+  <Accordion title="Performance Monitoring">
+    - Set performance budgets (e.g., max 3s load time)
+    - Identify slow pages from metrics
+    - Optimize images if load times are high
+    - Monitor resource sizes to prevent bloat
+    - Track metrics across different devices/connections
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="User count mismatch">
+    If the user count differs between localStorage and API:
+    1. Check for network errors in browser console
+    2. Verify API endpoint is accessible
+    3. Run data reconciliation by refreshing admin panel
+    4. Check for duplicate emails in both sources
+  </Accordion>
+
+  <Accordion title="Analytics not updating">
+    Analytics rely on the tracker utility. If data seems stale:
+    - Verify `utils/tracker.ts` is properly loaded
+    - Check that events are being logged to localStorage
+    - Clear tracker cache: `localStorage.removeItem('site_events')`
+    - Ensure `getEvents()` function is not throwing errors
+  </Accordion>
+
+  <Accordion title="Performance data missing">
+    Performance metrics use the Performance API:
+    - Ensure browser supports `performance.getEntriesByType()`
+    - Check that tracker is initialized on page load
+    - Some metrics only appear after user interaction
+    - Private/incognito mode may limit Performance API access
+  </Accordion>
+
+  <Accordion title="Cannot access users tab">
+    If you can't see the Users section:
+    - Verify you're logged in as SUPER_ADMIN
+    - Check `localStorage.getItem('user_session')`
+    - Ensure role is exactly "SUPER_ADMIN" (case-sensitive)
+    - Try logging out and back in to refresh session
+  </Accordion>
+</AccordionGroup>
+
+## Security Considerations
+
+<Warning>
+**Critical**: User data stored in localStorage is not encrypted and can be accessed via browser DevTools. For production systems:
+
+- Store only non-sensitive data in localStorage
+- Use backend authentication for admin access
+- Implement rate limiting on user data endpoints
+- Encrypt sensitive fields before localStorage storage
+- Use HTTPS for all admin panel access
+- Implement session timeout for admin users
+- Log all admin actions for security auditing
+</Warning>
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="Dashboard Overview" icon="gauge" href="/admin-guide/dashboard-overview">
+    Learn about admin access levels and navigation
+  </Card>
+  
+  <Card title="Managing Conferences" icon="calendar" href="/admin-guide/managing-conferences">
+    Track conference registrations and attendance
+  </Card>
+</CardGroup>

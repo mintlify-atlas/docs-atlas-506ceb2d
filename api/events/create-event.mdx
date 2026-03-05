@@ -1,0 +1,155 @@
+---
+title: "Create Event"
+api: "POST /api/eventos"
+description: "Create a new event for CONIITI 2026"
+---
+
+## Endpoint
+
+```
+POST /api/eventos
+```
+
+## Authentication
+
+This endpoint **requires authentication**. You must include a valid authentication token in the request headers.
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+## Request Body
+
+<ParamField body="nombre" type="string" required>
+  Name of the event
+</ParamField>
+
+<ParamField body="descripcion" type="string">
+  Description of the event
+</ParamField>
+
+<ParamField body="fecha_inicio" type="string" required>
+  Start date and time of the event (ISO 8601 format)
+</ParamField>
+
+<ParamField body="fecha_fin" type="string" required>
+  End date and time of the event (ISO 8601 format)
+</ParamField>
+
+<ParamField body="ubicacion" type="string">
+  Location where the event will take place
+</ParamField>
+
+<ParamField body="capacidad" type="integer">
+  Maximum capacity for the event
+</ParamField>
+
+## Response
+
+<ResponseField name="data" type="object">
+  The created event object
+  
+  <ResponseField name="id" type="string">
+    Unique identifier for the created event
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    Name of the event
+  </ResponseField>
+  
+  <ResponseField name="descripcion" type="string">
+    Description of the event
+  </ResponseField>
+  
+  <ResponseField name="fecha_inicio" type="string">
+    Start date and time of the event (ISO 8601 format)
+  </ResponseField>
+  
+  <ResponseField name="fecha_fin" type="string">
+    End date and time of the event (ISO 8601 format)
+  </ResponseField>
+  
+  <ResponseField name="ubicacion" type="string">
+    Location of the event
+  </ResponseField>
+  
+  <ResponseField name="capacidad" type="integer">
+    Maximum capacity for the event
+  </ResponseField>
+  
+  <ResponseField name="created_at" type="string">
+    Timestamp when the event was created
+  </ResponseField>
+  
+  <ResponseField name="updated_at" type="string">
+    Timestamp when the event was last updated
+  </ResponseField>
+</ResponseField>
+
+## Examples
+
+### Request
+
+```bash
+curl -X POST https://api.coniiti2026.com/api/eventos \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Hackathon CONIITI",
+    "descripcion": "Competencia de programación de 24 horas",
+    "fecha_inicio": "2026-03-16T08:00:00Z",
+    "fecha_fin": "2026-03-17T08:00:00Z",
+    "ubicacion": "Pabellón de Innovación",
+    "capacidad": 100
+  }'
+```
+
+### Response
+
+<CodeGroup>
+
+```json 201 - Created
+{
+  "id": "550e8400-e29b-41d4-a716-446655440002",
+  "nombre": "Hackathon CONIITI",
+  "descripcion": "Competencia de programación de 24 horas",
+  "fecha_inicio": "2026-03-16T08:00:00Z",
+  "fecha_fin": "2026-03-17T08:00:00Z",
+  "ubicacion": "Pabellón de Innovación",
+  "capacidad": 100,
+  "created_at": "2026-03-05T10:30:00Z",
+  "updated_at": "2026-03-05T10:30:00Z"
+}
+```
+
+```json 403 - Forbidden
+{
+  "error": "No tienes permisos para crear eventos"
+}
+```
+
+```json 401 - Unauthorized
+{
+  "error": "Token de autenticación inválido o expirado"
+}
+```
+
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="error" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+| Status Code | Description |
+|------------|-------------|
+| 201 | Event created successfully |
+| 401 | Unauthorized - Invalid or missing authentication token |
+| 403 | Forbidden - User doesn't have permission to create events |
+
+## Notes
+
+- The authentication middleware validates the JWT token before allowing event creation
+- All date fields should be in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)
+- The `fecha_fin` should be after `fecha_inicio`
+- Event capacity should be a positive integer

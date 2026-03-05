@@ -1,0 +1,234 @@
+---
+title: Render.com Deployment
+description: Deploy CONIITI 2026 backend and frontend to Render.com
+---
+
+CONIITI 2026 uses Render.com for production deployment with a monorepo structure containing both backend and frontend services.
+
+## Architecture Overview
+
+The application consists of two services:
+
+- **Backend**: Node.js/Express API with TypeScript
+- **Frontend**: React + Vite static site
+
+Both services are configured in `render.yaml` and can be deployed automatically via GitHub integration.
+
+## Backend Service (Node.js)
+
+### Configuration
+
+The backend service is configured as follows:
+
+```yaml
+- type: web
+  name: coniiti-2026-backend
+  runtime: node
+  plan: free
+  rootDir: backend
+  buildCommand: npm install && npm run build
+  startCommand: node dist/server.js
+  healthCheckPath: /api/health
+```
+
+### Service Details
+
+- **Type**: Web service
+- **Runtime**: Node.js 18.20.4
+- **Root Directory**: `backend/`
+- **Port**: 10000 (Render's default)
+- **Build Process**: TypeScript compilation (`npm run build` → `tsc`)
+- **Start Command**: Runs compiled JavaScript from `dist/server.js`
+- **Health Check**: `/api/health` endpoint
+
+### Backend Environment Variables
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `NODE_VERSION` | `18.20.4` | Node.js version |
+| `PORT` | `10000` | Server port (Render default) |
+| `SUPABASE_URL` | (secret) | Supabase project URL |
+| `SUPABASE_ANON_KEY` | (secret) | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | (secret) | Supabase admin key for privileged operations |
+
+### API Endpoints
+
+The backend exposes the following API routes:
+
+- `/api/usuarios` - User management
+- `/api/eventos` - Event management
+- `/api/ponencias` - Presentation/talk management
+- `/api/inscripciones` - Registration management
+- `/api/ponentes` - Speaker management
+
+## Frontend Service (Static Site)
+
+### Configuration
+
+The frontend is configured as a static site:
+
+```yaml
+- type: web
+  name: coniiti-2026-frontend
+  runtime: static
+  plan: free
+  rootDir: frontend/vite-project
+  buildCommand: npm install && npm run build
+  staticPublishPath: dist
+  routes:
+    - type: rewrite
+      source: /*
+      destination: /index.html
+```
+
+### Service Details
+
+- **Type**: Static site
+- **Runtime**: Static hosting
+- **Root Directory**: `frontend/vite-project/`
+- **Build Process**: TypeScript + Vite build (`npm run build` → `tsc && vite build`)
+- **Output Directory**: `dist/`
+- **Routing**: SPA routing with catch-all rewrite to `index.html`
+
+### Frontend Environment Variables
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `VITE_API_URL` | `https://coniiti-2026-backend.onrender.com/api` | Backend API URL |
+| `VITE_SUPABASE_URL` | (secret) | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | (secret) | Supabase anonymous key |
+
+<Note>
+Vite environment variables must be prefixed with `VITE_` to be exposed to the frontend application.
+</Note>
+
+## Deployment Process
+
+<Steps>
+
+<Step title="Connect GitHub Repository">
+In Render dashboard, connect your GitHub repository containing the CONIITI 2026 source code.
+</Step>
+
+<Step title="Create Blueprint">
+Render will automatically detect `render.yaml` and create a blueprint with both services configured.
+</Step>
+
+<Step title="Configure Environment Variables">
+For each service, add the required secret environment variables:
+
+**Backend:**
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (optional, falls back to anon key)
+
+**Frontend:**
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+<Note>
+`VITE_API_URL` is pre-configured in `render.yaml` to point to the backend service.
+</Note>
+</Step>
+
+<Step title="Deploy Services">
+Render will automatically:
+1. Install dependencies (`npm install`)
+2. Run build commands
+3. Deploy both services
+4. Assign URLs to each service
+</Step>
+
+<Step title="Verify Health Check">
+Once deployed, verify the backend is running by accessing:
+```
+https://coniiti-2026-backend.onrender.com/api/health
+```
+</Step>
+
+</Steps>
+
+## Service URLs
+
+After deployment, services will be available at:
+
+- **Backend**: `https://coniiti-2026-backend.onrender.com`
+- **Frontend**: `https://coniiti-2026-frontend.onrender.com`
+
+<Warning>
+Free tier services on Render spin down after 15 minutes of inactivity. The first request after inactivity may take 30-60 seconds to respond while the service spins up.
+</Warning>
+
+## Automatic Deployments
+
+Render automatically deploys when changes are pushed to the connected branch:
+
+1. Push commits to the main branch
+2. Render detects changes via webhook
+3. Services are rebuilt and redeployed automatically
+
+## Build Configuration
+
+### Backend Build
+
+```json
+"scripts": {
+  "dev": "nodemon src/server.ts",
+  "build": "tsc",
+  "start": "node dist/server.js"
+}
+```
+
+The build process:
+1. Runs `npm install` to install dependencies
+2. Executes `tsc` to compile TypeScript to JavaScript
+3. Outputs compiled files to `dist/` directory
+4. Starts server with `node dist/server.js`
+
+### Frontend Build
+
+```json
+"scripts": {
+  "dev": "vite",
+  "build": "tsc && vite build",
+  "preview": "vite preview"
+}
+```
+
+The build process:
+1. Runs `npm install` to install dependencies
+2. Executes `tsc` to type-check TypeScript files
+3. Runs `vite build` to bundle and optimize the application
+4. Outputs static files to `dist/` directory
+
+## Troubleshooting
+
+### Backend Build Failures
+
+- Verify Node.js version matches `NODE_VERSION` (18.20.4)
+- Check TypeScript compilation errors in build logs
+- Ensure all dependencies are in `dependencies`, not `devDependencies`
+
+### Frontend Build Failures
+
+- Verify Vite environment variables are prefixed with `VITE_`
+- Check for TypeScript errors during build
+- Ensure `dist/` directory is being generated
+
+### Service Won't Start
+
+- Check environment variables are set correctly
+- Verify Supabase credentials are valid
+- Review service logs in Render dashboard
+- Confirm health check endpoint is responding
+
+### API Connection Issues
+
+- Verify `VITE_API_URL` matches the backend service URL
+- Check CORS configuration in backend (`backend/src/app.ts:13`)
+- Ensure backend service is running and healthy
+
+## Next Steps
+
+- [Environment Setup](/development/deployment/environment-setup) - Configure production environment variables
+- [Supabase Integration](/development/supabase/overview) - Set up database and authentication

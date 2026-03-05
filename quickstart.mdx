@@ -1,80 +1,128 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: 'Quickstart'
+description: 'Get CONIITI 2026 running locally in under 5 minutes'
 ---
 
-## Get started in three steps
+## Welcome to CONIITI 2026
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+This quickstart guide will get you from zero to running the CONIITI 2026 conference management platform on your local machine.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  **Prerequisites**: Make sure you have Node.js v16 or higher installed on your system.
 </Note>
+
+## Quick Start
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the CONIITI 2026 repository to your local machine:
+    
+    ```bash
+    git clone <repository-url>
+    cd coniiti-2026
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all dependencies for both frontend and backend:
+    
+    ```bash
+    npm install
+    cd backend && npm install
+    cd ../frontend/vite-project && npm install
+    cd ../..
+    ```
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Create environment files for both frontend and backend. See [Configuration](/configuration) for detailed setup.
+
+    <Tabs>
+      <Tab title="Backend">
+        Create `backend/.env`:
+        ```bash
+        SUPABASE_URL=your_supabase_project_url
+        SUPABASE_ANON_KEY=your_supabase_anon_key
+        SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+        PORT=3000
+        ```
+      </Tab>
+      <Tab title="Frontend">
+        Create `frontend/vite-project/.env`:
+        ```bash
+        VITE_API_URL=http://localhost:3000/api
+        VITE_SUPABASE_URL=your_supabase_project_url
+        VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Start Development Servers">
+    Run both frontend and backend concurrently from the root directory:
+    
+    ```bash
+    npm run dev
+    ```
+    
+    Or run them separately:
+    
+    <CodeGroup>
+      ```bash Backend
+      cd backend
+      npm run dev
+      ```
+      
+      ```bash Frontend
+      cd frontend/vite-project
+      npm run dev
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Access the Application">
+    Open your browser and navigate to:
+    
+    - **Frontend**: [http://localhost:5173](http://localhost:5173)
+    - **Backend API**: [http://localhost:3000/api](http://localhost:3000/api)
+    
+    <Check>
+      You should now see the CONIITI 2026 homepage!
+    </Check>
+  </Step>
+</Steps>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Installation Guide" icon="download" href="/installation">
+    Detailed installation instructions for development and production
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Learn how to configure Supabase and environment variables
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/authentication/overview">
+    Explore available API endpoints
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    Understand the platform's technical architecture
+  </Card>
+</CardGroup>
+
+## Key Features
+
+- **Conference Management**: Manage speakers, sessions, and schedule
+- **User Registration**: Attendee registration and authentication via Supabase
+- **Real-time Updates**: Live synchronization of conference data
+- **QR Code System**: QR scanning for event check-ins
+- **Dynamic Theming**: Country-specific visual themes (Colombia, México, Italia)
+- **Admin Dashboard**: Complete control panel for organizers
+
+## Need Help?
+
+If you encounter any issues:
+
+1. Check the [Installation](/installation) guide for detailed setup
+2. Review [Configuration](/configuration) for environment variables
+3. Verify that all required dependencies are installed
+4. Ensure Node.js version is v16 or higher

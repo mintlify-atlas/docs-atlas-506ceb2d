@@ -1,0 +1,212 @@
+---
+title: Routing
+description: React Router configuration and navigation in CONIITI 2026
+---
+
+# Routing
+
+CONIITI 2026 uses **React Router DOM v7** for client-side routing. All routes are defined in `App.tsx` and wrapped with the `Layout` component for consistent header/footer.
+
+## Route Configuration
+
+Routes are defined using the `Routes` and `Route` components from React Router:
+
+```tsx title="src/App.tsx" {6-13}
+import { Routes, Route } from "react-router-dom"
+import Layout from "./components/Layout"
+
+export default function App() {
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/conferencias" element={<Agenda />} />
+        <Route path="/invitados" element={<Invitados />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/registro" element={<Register />} />
+        <Route path="/perfil" element={<Profile />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/actualizar-password" element={<ResetPassword />} />
+      </Routes>
+    </Layout>
+  )
+}
+```
+
+## Available Routes
+
+| Path | Component | Description | Auth Required |
+|------|-----------|-------------|---------------|
+| `/` | `Home` | Landing page with event countdown | No |
+| `/conferencias` | `Agenda` | Conference schedule with filters | No |
+| `/invitados` | `Invitados` | List of speakers/guests | No |
+| `/login` | `Login` | User authentication | No |
+| `/registro` | `Register` | New user registration | No |
+| `/perfil` | `Profile` | User profile and registrations | Yes |
+| `/admin` | `Admin` | Admin dashboard | Yes (Admin) |
+| `/actualizar-password` | `ResetPassword` | Password reset form | No |
+
+## Navigation with Link
+
+Use React Router's `Link` component for internal navigation:
+
+```tsx title="src/components/Layout.tsx" {1,5-7}
+import { Link } from "react-router-dom"
+
+<nav>
+  <ul className="navbar-links">
+    <li>
+      <Link to="/">{t("nav_home")}</Link>
+    </li>
+    <li>
+      <Link to="/invitados">{t("nav_guests")}</Link>
+    </li>
+    <li>
+      <Link to="/conferencias">{t("nav_agenda")}</Link>
+    </li>
+  </ul>
+</nav>
+```
+
+## Route Tracking
+
+The application automatically tracks page views and navigation using a custom analytics system:
+
+```tsx title="src/App.tsx" {4,8}
+import { useLocation } from "react-router-dom"
+import { trackEvent } from "./utils/tracker"
+
+export default function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    trackEvent('PAGE_VIEW', location.pathname);
+    // Additional performance tracking...
+  }, [location.pathname]);
+
+  // ...
+}
+```
+
+## Programmatic Navigation
+
+For navigation after form submissions or user actions, use `window.location.href`:
+
+```tsx title="Example: Redirect after login"
+const handleLogout = () => {
+  localStorage.removeItem("user_session")
+  setUser(null)
+  window.location.href = "/"  // Force page reload
+}
+```
+
+## Protected Routes
+
+### Admin Route Protection
+
+The Admin page checks user roles from localStorage:
+
+```tsx title="src/pages/Admin.tsx"
+const sessionData = localStorage.getItem("user_session")
+const user = sessionData ? JSON.parse(sessionData) : null
+
+if (!user || !['SUPER_ADMIN', 'CONTENT_MANAGER', 'ADMIN'].includes(user.role)) {
+  return <div>Access Denied</div>
+}
+```
+
+### Profile Route Protection
+
+The Profile page redirects unauthenticated users to login:
+
+```tsx title="src/pages/Profile.tsx"
+const sessionData = localStorage.getItem("user_session")
+if (!sessionData) {
+  window.location.href = "/login"
+  return null
+}
+```
+
+## Layout Integration
+
+All routes are wrapped in the `Layout` component which provides:
+
+- **Sticky header** with navigation
+- **User authentication status** in navbar
+- **Language switcher** (ES/EN)
+- **Footer** with copyright
+- **Mobile-responsive menu**
+
+```tsx title="src/App.tsx" {3,5}
+return (
+  <>
+    <Toaster position="top-center" richColors />
+    <Layout>
+      <Routes>
+        {/* All routes inherit Layout */}
+      </Routes>
+    </Layout>
+  </>
+)
+```
+
+## Session Management on Route Change
+
+The Layout component refreshes user session state whenever the route changes:
+
+```tsx title="src/components/Layout.tsx" {4-6}
+import { useLocation } from "react-router-dom"
+
+export default function Layout({ children }: Props) {
+  const location = useLocation()
+
+  useEffect(() => {
+    refreshSession()  // Check localStorage for user_session
+  }, [location.pathname])
+
+  // ...
+}
+```
+
+## Hash Navigation
+
+For same-page anchor links (like "About" section on homepage):
+
+```tsx
+<a href="/#acerca-de" onClick={() => setMenuOpen(false)}>
+  {t("nav_about")}
+</a>
+```
+
+## Mobile Menu Behavior
+
+The mobile navigation menu closes automatically on route changes:
+
+```tsx title="src/components/Layout.tsx"
+<Link to="/conferencias" onClick={() => setMenuOpen(false)}>
+  {t("nav_agenda")}
+</Link>
+```
+
+## Route Performance Monitoring
+
+Each route change triggers performance tracking:
+
+- **Page view tracking** - Route path logged
+- **Load time measurement** - Time to render
+- **Resource loading** - Images and assets tracked
+
+See `src/utils/tracker.ts` for implementation details.
+
+## Best Practices
+
+1. **Use `Link` for navigation** - Prevents full page reloads
+2. **Check auth on mount** - Protected routes should verify session immediately
+3. **Close mobile menu on click** - Improve UX with `onClick={() => setMenuOpen(false)}`
+4. **Use translations** - All nav text should use `t()` function for i18n
+5. **Track page views** - Ensure analytics capture route changes
+
+## Next Steps
+
+- [Components](/development/frontend/components) - Explore Layout and navigation components
+- [Project Structure](/development/frontend/project-structure) - Understand the codebase organization

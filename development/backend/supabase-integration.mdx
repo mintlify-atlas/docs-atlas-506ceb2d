@@ -1,0 +1,589 @@
+---
+title: 'Supabase Integration'
+description: 'Database client setup and usage patterns'
+---
+
+## Overview
+
+The CONIITI 2026 backend uses **Supabase** as its database and authentication provider. The application maintains two separate Supabase clients for different use cases: a public client and an admin client.
+
+## Client Configuration
+
+**Source:** `src/config/supabase.ts`
+
+```typescript
+import { createClient } from '@supabase/supabase-js'
+
+// Public client (validate tokens)
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+)
+
+// Admin client (secure operations)
+export const admin_supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+)
+```
+
+## Two-Client Architecture
+
+### Public Client: `supabase`
+
+**Purpose:** Standard database operations with Row Level Security (RLS) enforcement
+
+**Characteristics:**
+- Uses `SUPABASE_ANON_KEY`
+- Respects Row Level Security policies
+- Limited to authenticated user's data
+- Safe for general database operations
+
+**When to use:**
+- Reading public data
+- User-specific queries (through RLS)
+- Standard CRUD operations
+- Service layer functions
+
+**Example:** `src/modules/usuario/usuario.service.ts`
+
+```typescript
+import { supabase } from '../../config/supabase'
+
+export const obtenerMiPerfil = async (id: string) => {
+  return await supabase
+    .from('perfil_usuario')
+    .select('*')
+    .eq('id', id)
+    .single()
+}
+```
+
+### Admin Client: `admin_supabase`
+
+**Purpose:** Administrative operations that bypass RLS
+
+**Characteristics:**
+- Uses `SUPABASE_SERVICE_ROLE_KEY`
+- Bypasses Row Level Security policies
+- Full database access
+- Can perform admin auth operations
+
+**When to use:**
+- User registration and auth operations
+- Token validation in middleware
+- Admin-level data access
+- Operations requiring RLS bypass
+- User deletion/management
+
+**Example:** `src/middleware/auth.middleware.ts:18`
+
+```typescript
+import { admin_supabase } from '../config/supabase'
+
+const { data, error } = await admin_supabase.auth.getUser(token)
+```
+
+## Environment Variables
+
+Required environment variables in `.env`:
+
+```bash
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+```
+
+<Warning>
+  **Never commit `.env` files to version control.** The service role key grants full database access.
+</Warning>
+
+### Getting Your Keys
+
+1. Go to [Supabase Dashboard](https://app.supabase.com)
+2. Select your project
+3. Navigate to **Settings → API**
+4. Copy the following:
+   - **Project URL** → `SUPABASE_URL`
+   - **anon/public key** → `SUPABASE_ANON_KEY`
+   - **service_role key** → `SUPABASE_SERVICE_ROLE_KEY`
+
+## Database Operations
+
+### SELECT Queries
+
+```typescript
+// Get all records
+const { data, error } = await supabase
+  .from('evento')
+  .select('*')
+
+// Get specific columns
+const { data, error } = await supabase
+  .from('evento')
+  .select('id, nombre, fecha')
+
+// Get single record
+const { data, error } = await supabase
+  .from('perfil_usuario')
+  .select('*')
+  .eq('id', userId)
+  .single()
+
+// Get with filter
+const { data, error } = await supabase
+  .from('perfil_usuario')
+  .select('*')
+  .eq('rol', 'ESTUDIANTE')
+
+// Get with ordering
+const { data, error } = await supabase
+  .from('perfil_usuario')
+  .select('*')
+  .order('created_at', { ascending: false })
+```
+
+**Real Example:** `src/modules/evento/evento.service.ts:3-4`
+
+```typescript
+export const obtenerEventos = async () =>
+  supabase.from('evento').select('*')
+```
+
+### INSERT Operations
+
+```typescript
+// Insert single record
+const { data, error } = await admin_supabase
+  .from('perfil_usuario')
+  .insert({
+    id: userId,
+    nombre_completo: 'Juan Pérez',
+    email: 'juan@example.com',
+    rol: 'USER'
+  })
+
+// Insert multiple records
+const { data, error } = await supabase
+  .from('evento')
+  .insert([
+    { nombre: 'Event 1', fecha: '2026-03-10' },
+    { nombre: 'Event 2', fecha: '2026-03-11' }
+  ])
+```
+
+**Real Example:** `src/modules/evento/evento.service.ts:6-7`
+
+```typescript
+export const crearEvento = async (data: any) =>
+  supabase.from('evento').insert(data)
+```
+
+### UPDATE Operations
+
+```typescript
+// Update record
+const { data, error } = await admin_supabase
+  .from('perfil_usuario')
+  .update({
+    nombre_completo: 'Juan Pérez Updated',
+    carrera: 'Ingeniería'
+  })
+  .eq('id', userId)
+
+// Update with multiple conditions
+const { data, error } = await supabase
+  .from('inscripcion')
+  .update({ estado: 'confirmado' })
+  .eq('usuario_id', userId)
+  .eq('evento_id', eventoId)
+```
+
+**Real Example:** `src/modules/usuario/usuario.controller.ts:122-128`
+
+```typescript
+const { error } = await admin_supabase
+  .from('perfil_usuario')
+  .update({
+    nombre_completo,
+    carrera
+  })
+  .eq('id', userId)
+```
+
+### DELETE Operations
+
+```typescript
+// Delete record
+const { error } = await supabase
+  .from('inscripcion')
+  .delete()
+  .eq('id', inscripcionId)
+
+// Delete with conditions
+const { error } = await admin_supabase
+  .from('ponencia')
+  .delete()
+  .eq('ponente_id', ponenteId)
+  .eq('estado', 'draft')
+```
+
+## Authentication Operations
+
+### Sign Up
+
+**Source:** `src/modules/usuario/usuario.controller.ts:41-44`
+
+```typescript
+const { data, error } = await admin_supabase.auth.signUp({
+  email: 'user@example.com',
+  password: 'securepassword'
+})
+
+if (error || !data.user) {
+  // Handle error
+}
+
+const userId = data.user.id
+```
+
+### Validate Token
+
+**Source:** `src/middleware/auth.middleware.ts:18`
+
+```typescript
+const { data, error } = await admin_supabase.auth.getUser(token)
+
+if (error || !data.user) {
+  // Token invalid
+}
+
+const user = data.user
+```
+
+### Delete User
+
+**Source:** `src/modules/usuario/usuario.controller.ts:68`
+
+```typescript
+await admin_supabase.auth.admin.deleteUser(userId)
+```
+
+## Response Format
+
+All Supabase operations return a consistent response format:
+
+```typescript
+interface SupabaseResponse<T> {
+  data: T | null
+  error: PostgrestError | null
+}
+```
+
+### Handling Responses
+
+```typescript
+const { data, error } = await supabase.from('evento').select('*')
+
+if (error) {
+  console.error('Database error:', error.message)
+  return { error: error.message }
+}
+
+if (!data) {
+  console.error('No data returned')
+  return { error: 'No data found' }
+}
+
+// Success - use data
+return { data }
+```
+
+## Common Patterns
+
+### Service Layer Pattern
+
+Services return Supabase responses directly:
+
+```typescript
+// service.ts
+import { supabase } from '../../config/supabase'
+
+export const obtenerEventos = async () => {
+  return await supabase.from('evento').select('*')
+}
+```
+
+```typescript
+// controller.ts
+import * as service from './service'
+
+export const getEventos = async (_req: Request, res: Response) => {
+  const { data, error } = await service.obtenerEventos()
+  if (error) return res.status(400).json({ error: error.message })
+  res.json(data)
+}
+```
+
+### Existence Check Pattern
+
+**Source:** `src/modules/usuario/usuario.controller.ts:16-20`
+
+```typescript
+const { data: docExists } = await admin_supabase
+  .from('perfil_usuario')
+  .select('id')
+  .eq('documento', documentNumber)
+  .maybeSingle()
+
+if (docExists) {
+  return res.status(400).json({ 
+    error: "El número de documento ya se encuentra registrado." 
+  })
+}
+```
+
+**Key points:**
+- Use `.maybeSingle()` instead of `.single()` to avoid errors when record doesn't exist
+- Check if `data` exists, not if `error` exists
+- Returns `null` if no record found (not an error)
+
+### Transaction Pattern (Create with Rollback)
+
+**Source:** `src/modules/usuario/usuario.controller.ts:41-71`
+
+```typescript
+// 1. Create auth user
+const { data, error } = await admin_supabase.auth.signUp({
+  email,
+  password
+})
+
+if (error || !data.user) {
+  return res.status(400).json({ error: error?.message })
+}
+
+// 2. Create profile
+const { error: profileError } = await admin_supabase
+  .from('perfil_usuario')
+  .insert({
+    id: data.user.id,
+    nombre_completo: fullName,
+    email: email
+  })
+
+if (profileError) {
+  // Rollback: Delete auth user if profile creation fails
+  await admin_supabase.auth.admin.deleteUser(data.user.id)
+  return res.status(400).json({ error: profileError.message })
+}
+
+return res.status(201).json({ message: 'Success' })
+```
+
+## Advanced Queries
+
+### Joins with Related Data
+
+```typescript
+// Get inscriptions with user and event data
+const { data, error } = await supabase
+  .from('inscripcion')
+  .select(`
+    *,
+    perfil_usuario(nombre_completo, email),
+    evento(nombre, fecha)
+  `)
+  .eq('estado', 'confirmado')
+```
+
+### Filtering with Multiple Conditions
+
+```typescript
+const { data, error } = await supabase
+  .from('ponencia')
+  .select('*')
+  .eq('estado', 'aprobado')
+  .gte('fecha_presentacion', '2026-03-01')
+  .lte('fecha_presentacion', '2026-03-31')
+  .order('fecha_presentacion', { ascending: true })
+```
+
+### Pagination
+
+```typescript
+const pageSize = 10
+const page = 1
+const from = (page - 1) * pageSize
+const to = from + pageSize - 1
+
+const { data, error, count } = await supabase
+  .from('evento')
+  .select('*', { count: 'exact' })
+  .range(from, to)
+```
+
+### Text Search
+
+```typescript
+const { data, error } = await supabase
+  .from('ponencia')
+  .select('*')
+  .textSearch('titulo', 'machine learning')
+```
+
+## Error Handling
+
+### Common Errors
+
+```typescript
+if (error) {
+  switch (error.code) {
+    case '23505': // Unique violation
+      return res.status(400).json({ error: 'Registro duplicado' })
+    case '23503': // Foreign key violation
+      return res.status(400).json({ error: 'Referencia inválida' })
+    case 'PGRST116': // No rows found
+      return res.status(404).json({ error: 'No encontrado' })
+    default:
+      return res.status(500).json({ error: error.message })
+  }
+}
+```
+
+## TypeScript Types
+
+### Generating Types
+
+Generate TypeScript types from your database:
+
+```bash
+npx supabase gen types typescript --project-id "your-project-id" --schema public > src/types/database.types.ts
+```
+
+### Using Generated Types
+
+```typescript
+import { Database } from './types/database.types'
+
+type Evento = Database['public']['Tables']['evento']['Row']
+type InscripcionInsert = Database['public']['Tables']['inscripcion']['Insert']
+
+export const crearInscripcion = async (data: InscripcionInsert) => {
+  return await supabase.from('inscripcion').insert(data)
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Choose the Right Client">
+    **Use `supabase` for:**
+    - Standard CRUD operations
+    - User-scoped queries
+    - Public data access
+    
+    **Use `admin_supabase` for:**
+    - Authentication operations
+    - Bypassing RLS policies
+    - Administrative functions
+    - Token validation
+  </Accordion>
+
+  <Accordion title="Always Handle Errors">
+    Never assume database operations succeed:
+    
+    ```typescript
+    const { data, error } = await supabase.from('evento').select('*')
+    if (error) {
+      console.error('Error:', error)
+      return res.status(400).json({ error: error.message })
+    }
+    // Use data safely
+    ```
+  </Accordion>
+
+  <Accordion title="Use Specific Queries">
+    Select only the columns you need:
+    
+    ```typescript
+    // Good
+    .select('id, nombre, fecha')
+    
+    // Avoid
+    .select('*')
+    ```
+  </Accordion>
+
+  <Accordion title="Implement Proper Rollback">
+    When operations depend on each other, implement rollback logic:
+    
+    ```typescript
+    const { data: user } = await admin_supabase.auth.signUp({...})
+    const { error } = await admin_supabase.from('profile').insert({...})
+    
+    if (error) {
+      await admin_supabase.auth.admin.deleteUser(user.id)
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Use .single() vs .maybeSingle()">
+    **Use `.single()`** when you expect exactly one result:
+    ```typescript
+    .eq('id', userId).single()  // Error if 0 or >1 results
+    ```
+    
+    **Use `.maybeSingle()`** when you want to check existence:
+    ```typescript
+    .eq('documento', doc).maybeSingle()  // null if not found
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Security Considerations
+
+<Warning>
+  **The service role key bypasses all security policies.** Only use `admin_supabase` when absolutely necessary.
+</Warning>
+
+### Secure Usage
+
+```typescript
+// ✅ Good: Use admin client for auth operations
+const { data } = await admin_supabase.auth.getUser(token)
+
+// ✅ Good: Use public client with user-scoped queries
+const { data } = await supabase
+  .from('perfil_usuario')
+  .select('*')
+  .eq('id', authenticatedUserId)
+
+// ❌ Bad: Using admin client unnecessarily
+const { data } = await admin_supabase
+  .from('evento')
+  .select('*')
+
+// ✅ Better: Use public client (respects RLS)
+const { data } = await supabase
+  .from('evento')
+  .select('*')
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/development/backend/authentication">
+    Learn about token validation
+  </Card>
+  <Card title="Modules" icon="puzzle-piece" href="/development/backend/modules">
+    Use Supabase in your modules
+  </Card>
+  <Card title="Database Schema" icon="table" href="/development/database-setup">
+    Understand the database structure
+  </Card>
+  <Card title="Supabase Docs" icon="book" href="https://supabase.com/docs">
+    Official Supabase documentation
+  </Card>
+</CardGroup>

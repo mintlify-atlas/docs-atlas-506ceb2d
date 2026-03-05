@@ -1,0 +1,90 @@
+---
+title: 'Enroll in Presentation'
+api: 'POST /api/inscripciones'
+description: 'Enroll a user in a specific presentation at CONIITI 2026'
+---
+
+This endpoint allows authenticated users to enroll in a presentation. Each enrollment creates a record linking the user to the selected presentation.
+
+## Authentication
+
+This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+
+```
+Authorization: Bearer <token>
+```
+
+## Request Body
+
+<ParamField body="ponencia_id" type="string" required>
+  The unique identifier of the presentation to enroll in
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string">
+  Unique identifier for the enrollment record
+</ResponseField>
+
+<ResponseField name="usuario_id" type="string">
+  ID of the user who enrolled
+</ResponseField>
+
+<ResponseField name="ponencia_id" type="string">
+  ID of the presentation the user enrolled in
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the enrollment was created
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.coniiti.com/api/inscripciones \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ponencia_id": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+```
+
+## Example Response
+
+<CodeGroup>
+
+```json 201 - Success
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "usuario_id": "987e6543-e21b-12d3-a456-426614174001",
+  "ponencia_id": "550e8400-e29b-41d4-a716-446655440000",
+  "created_at": "2026-03-05T10:30:00.000Z"
+}
+```
+
+```json 400 - Error
+{
+  "error": "Error message describing what went wrong"
+}
+```
+
+```json 401 - Unauthorized
+{
+  "error": "Unauthorized access"
+}
+```
+
+</CodeGroup>
+
+## Error Responses
+
+The endpoint returns a 400 status code when:
+- The `ponencia_id` is invalid or doesn't exist
+- The user is already enrolled in the presentation
+- Database constraints are violated
+
+## Notes
+
+- Users can only enroll in presentations that are available for enrollment
+- Duplicate enrollments for the same user and presentation are prevented by database constraints
+- The user ID is automatically extracted from the authentication token

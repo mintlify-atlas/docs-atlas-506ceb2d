@@ -1,0 +1,333 @@
+---
+title: 'Installation'
+description: 'Complete installation guide for CONIITI 2026 platform'
+---
+
+## Overview
+
+CONIITI 2026 is a full-stack conference management platform built with React, TypeScript, Express, and Supabase. This guide covers installation for both development and production environments.
+
+## System Requirements
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node-js">
+    Version 16.x or higher required
+  </Card>
+  <Card title="npm" icon="box">
+    Version 7.x or higher (comes with Node.js)
+  </Card>
+  <Card title="Git" icon="git-alt">
+    For version control
+  </Card>
+  <Card title="Supabase Account" icon="database">
+    For authentication and database
+  </Card>
+</CardGroup>
+
+## Project Structure
+
+The platform consists of two main components:
+
+```
+coniiti-2026/
+├── backend/                 # Express + TypeScript API
+│   ├── src/
+│   │   ├── config/         # Supabase configuration
+│   │   ├── modules/        # API modules (eventos, ponencias, etc.)
+│   │   ├── middleware/     # Authentication middleware
+│   │   ├── app.ts          # Express app setup
+│   │   └── server.ts       # Server entry point
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── frontend/vite-project/  # React + TypeScript + Vite
+│   ├── src/
+│   │   ├── components/     # Reusable React components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API service layer
+│   │   ├── utils/          # Utility functions
+│   │   ├── App.tsx         # Main app component
+│   │   └── main.tsx        # Application entry point
+│   ├── public/             # Static assets
+│   ├── package.json
+│   └── tsconfig.json
+│
+└── package.json            # Root package with dev scripts
+```
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the project from your version control system:
+    
+    ```bash
+    git clone <repository-url>
+    cd coniiti-2026
+    ```
+  </Step>
+
+  <Step title="Install Root Dependencies">
+    Install the root-level dependencies (includes concurrently for running both servers):
+    
+    ```bash
+    npm install
+    ```
+    
+    This installs:
+    - `concurrently` - Run frontend and backend simultaneously
+    - Type definitions for React
+  </Step>
+
+  <Step title="Install Backend Dependencies">
+    Navigate to the backend directory and install dependencies:
+    
+    ```bash
+    cd backend
+    npm install
+    ```
+    
+    <AccordionGroup>
+      <Accordion title="Backend Dependencies Installed">
+        **Production Dependencies:**
+        - `express` - Web framework
+        - `@supabase/supabase-js` - Supabase client
+        - `cors` - Cross-origin resource sharing
+        - `dotenv` - Environment variable management
+        - `zod` - Schema validation
+        
+        **Development Dependencies:**
+        - `typescript` - TypeScript compiler
+        - `nodemon` - Auto-restart during development
+        - `ts-node-dev` - TypeScript execution
+        - Type definitions for Express, Node, and CORS
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Install Frontend Dependencies">
+    Navigate to the frontend directory and install dependencies:
+    
+    ```bash
+    cd ../frontend/vite-project
+    npm install
+    ```
+    
+    <AccordionGroup>
+      <Accordion title="Frontend Dependencies Installed">
+        **Production Dependencies:**
+        - `react` & `react-dom` - React framework
+        - `react-router-dom` - Client-side routing
+        - `@supabase/supabase-js` - Supabase client
+        - `tailwindcss` - Utility-first CSS framework
+        - `lucide-react` - Icon library
+        - `recharts` - Charting library
+        - `sonner` - Toast notifications
+        - `react-qr-code` - QR code generation
+        - `@yudiel/react-qr-scanner` - QR code scanning
+        
+        **Development Dependencies:**
+        - `vite` - Build tool and dev server
+        - `typescript` - TypeScript compiler
+        - Type definitions for React
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Set up environment variables for both frontend and backend. See the [Configuration](/configuration) guide for detailed instructions.
+    
+    <Warning>
+      The application will not run without proper Supabase configuration!
+    </Warning>
+  </Step>
+</Steps>
+
+## Verify Installation
+
+After installation, verify everything is set up correctly:
+
+<CodeGroup>
+  ```bash Check Backend
+  cd backend
+  npm run build
+  ```
+  
+  ```bash Check Frontend
+  cd frontend/vite-project
+  npm run build
+  ```
+</CodeGroup>
+
+Both commands should complete without errors.
+
+## Running the Application
+
+### Development Mode
+
+<Tabs>
+  <Tab title="Concurrent (Recommended)">
+    Run both frontend and backend from the root directory:
+    
+    ```bash
+    npm run dev
+    ```
+    
+    This command uses `concurrently` to run:
+    - Backend: `http://localhost:3000`
+    - Frontend: `http://localhost:5173`
+  </Tab>
+  
+  <Tab title="Backend Only">
+    ```bash
+    cd backend
+    npm run dev
+    ```
+    
+    Uses `nodemon` to watch for changes and auto-restart.
+  </Tab>
+  
+  <Tab title="Frontend Only">
+    ```bash
+    cd frontend/vite-project
+    npm run dev
+    ```
+    
+    Starts Vite dev server with hot module replacement (HMR).
+  </Tab>
+</Tabs>
+
+### Production Build
+
+<Steps>
+  <Step title="Build Backend">
+    ```bash
+    cd backend
+    npm run build
+    ```
+    
+    Compiles TypeScript to JavaScript in the `dist/` directory.
+  </Step>
+  
+  <Step title="Build Frontend">
+    ```bash
+    cd frontend/vite-project
+    npm run build
+    ```
+    
+    Creates optimized production bundle in the `dist/` directory.
+  </Step>
+  
+  <Step title="Start Production Server">
+    ```bash
+    # Backend
+    cd backend
+    npm start
+    
+    # Frontend (serve static files with a web server)
+    cd frontend/vite-project
+    npm run preview
+    ```
+  </Step>
+</Steps>
+
+## Deployment
+
+The project includes a `render.yaml` configuration for deployment on Render.com:
+
+<AccordionGroup>
+  <Accordion title="Backend Service Configuration">
+    ```yaml
+    - type: web
+      name: coniiti-2026-backend
+      runtime: node
+      plan: free
+      rootDir: backend
+      buildCommand: npm install && npm run build
+      startCommand: node dist/server.js
+      healthCheckPath: /api/health
+      envVars:
+        - key: NODE_VERSION
+          value: 18.20.4
+        - key: PORT
+          value: 10000
+        - key: SUPABASE_URL
+          sync: false
+        - key: SUPABASE_ANON_KEY
+          sync: false
+    ```
+  </Accordion>
+  
+  <Accordion title="Frontend Service Configuration">
+    ```yaml
+    - type: web
+      name: coniiti-2026-frontend
+      runtime: static
+      plan: free
+      rootDir: frontend/vite-project
+      buildCommand: npm install && npm run build
+      staticPublishPath: dist
+      routes:
+        - type: rewrite
+          source: /*
+          destination: /index.html
+      envVars:
+        - key: VITE_API_URL
+          value: https://coniiti-2026-backend.onrender.com/api
+        - key: VITE_SUPABASE_URL
+          sync: false
+        - key: VITE_SUPABASE_ANON_KEY
+          sync: false
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Port Already in Use">
+    If port 3000 or 5173 is already in use:
+    
+    **Backend**: Set `PORT` in `backend/.env`
+    ```bash
+    PORT=3001
+    ```
+    
+    **Frontend**: Vite will automatically try the next available port
+  </Accordion>
+  
+  <Accordion title="Module Not Found Errors">
+    Delete `node_modules` and reinstall:
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+  </Accordion>
+  
+  <Accordion title="TypeScript Compilation Errors">
+    Ensure TypeScript is installed:
+    ```bash
+    npm install -D typescript
+    ```
+    
+    Check `tsconfig.json` is present in both frontend and backend directories.
+  </Accordion>
+  
+  <Accordion title="Supabase Connection Issues">
+    1. Verify environment variables are set correctly
+    2. Check Supabase project is active
+    3. Confirm API keys are valid
+    4. Review CORS settings in Supabase dashboard
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Set up Supabase and environment variables
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/authentication/overview">
+    Explore available API endpoints
+  </Card>
+</CardGroup>

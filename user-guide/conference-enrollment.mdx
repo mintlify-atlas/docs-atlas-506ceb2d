@@ -1,0 +1,371 @@
+---
+title: Conference Enrollment
+description: How to browse, filter, and enroll in CONIITI 2026 conferences
+---
+
+# Conference Enrollment
+
+The Agenda page is where you'll discover all available conferences, filter by your interests, and enroll in the sessions you want to attend.
+
+## Accessing the Agenda
+
+Navigate to the Agenda page at `/agenda` or click the Agenda link in the navigation menu.
+
+<Note>
+  You can browse conferences without logging in, but you must be authenticated to enroll in conferences.
+</Note>
+
+---
+
+## Browsing Conferences
+
+### Conference Day Navigation
+
+CONIITI 2026 spans multiple days. Use the day tabs at the top of the Agenda page to switch between:
+- **Día 1** (Day 1)
+- **Día 2** (Day 2)
+- **Día 3** (Day 3)
+
+<Tip>
+  Click on any day tab to see only the conferences scheduled for that day.
+</Tip>
+
+### Understanding Conference Cards
+
+Each conference is displayed as a card containing:
+
+#### Header Information
+- **Modality Badge** (Top-right corner):
+  - 🌐 **Virtual**: Online conference
+  - 📍 **Presencial**: In-person conference
+- **Category Badge**: Conference category (e.g., "General")
+
+#### Conference Details
+- **Title**: Main conference name in blue
+- **Description**: Brief overview of the conference content
+- **Time**: 🕒 Start and end times
+- **Location**: 📍 Physical location or "Plataforma Virtual"
+- **Speaker**: 👤 Presenter name
+
+#### Availability Information
+- **Disponibilidad** (Availability) section with:
+  - Current available seats vs. total capacity
+  - Visual progress bar indicating seat availability
+  - Color-coded background:
+    - 🟢 **Green**: Many seats available (100-150 seats)
+    - 🟡 **Yellow**: Moderate availability (50-100 seats)
+    - 🟠 **Orange**: Limited seats (1-50 seats)
+    - 🔴 **Red**: No seats available (Agotado)
+
+#### Additional Resources
+Some conferences include:
+- 🔗 **Enlace al Material**: Link to external conference materials
+- 📁 **Descargar Documento**: Downloadable conference documents
+
+---
+
+## Filtering and Searching
+
+### Search Bar
+
+Use the search box at the top of the page to find specific conferences:
+- Search by **conference title**
+- Search by **speaker name**
+- Results update in real-time as you type
+
+<Tip>
+  The search is case-insensitive, so you can type in uppercase or lowercase.
+</Tip>
+
+### Filter by Modality
+
+Use the **📍 Modalidad** (Modality) dropdown to filter:
+- **Todas las Modalidades**: Show all conferences (default)
+- **Presencial**: Only in-person conferences
+- **Virtual**: Only online conferences
+
+### Filter by Career
+
+Use the **🎓 Carrera** (Career) dropdown to show conferences relevant to your field:
+- **Todas las Carreras**: Show all conferences (default)
+- **Administración de Empresas**
+- **Arquitectura**
+- **Derecho**
+- **Economía**
+- **Ingeniería Civil**
+- **Ingeniería de Sistemas**
+- **Ingeniería Electrónica**
+- **Ingeniería Industrial**
+- **Psicología**
+- **Diseño Gráfico**
+- **General**: Conferences open to all majors
+
+<Note>
+  Filters work together - you can combine search, modality, and career filters to narrow down your options.
+</Note>
+
+### Clearing Filters
+
+When you have active filters, a **"✕ Limpiar"** (Clear) button appears:
+- Click it to reset all filters
+- Returns you to viewing all conferences for the selected day
+
+### Results Counter
+
+Below the filters, you'll see a count of how many conferences match your current filters:
+- "X conferencias encontradas" (X conferences found)
+- Updates dynamically as you adjust filters
+
+---
+
+## Enrolling in a Conference
+
+<Steps>
+  <Step title="Find Your Conference">
+    Use the day tabs, search, and filters to locate the conference you want to attend.
+  </Step>
+
+  <Step title="Check Availability">
+    Review the **Disponibilidad** section:
+    - Ensure there are available seats
+    - Note the conference time to avoid schedule conflicts
+    - Check if it's virtual or in-person
+
+    <Note>
+      If you see "Agotado" (Sold Out), the conference is full and enrollment is not available.
+    </Note>
+  </Step>
+
+  <Step title="Click Enroll">
+    Click the blue **"Inscribirse ahora"** (Enroll now) button on the conference card.
+
+    <Tip>
+      The button is prominently displayed in the center of each conference card.
+    </Tip>
+  </Step>
+
+  <Step title="Wait for Confirmation">
+    You'll see "Procesando..." (Processing...) while your enrollment is being registered.
+  </Step>
+
+  <Step title="Success!">
+    Once enrolled:
+    - You'll see a success message: "🎉 ¡Inscripción exitosa! Puedes verla en tu perfil."
+    - The button changes to **"✓ Inscrito"** (Enrolled) with a gray background
+    - Available seats decrease by one
+    - The conference appears in your profile
+  </Step>
+</Steps>
+
+### Enrollment Without Login
+
+If you try to enroll without being logged in:
+1. You'll see an alert: "Debes iniciar sesión para inscribirte en conferencias."
+2. You'll be redirected to the login page
+3. After logging in, return to the Agenda to enroll
+
+---
+
+## Managing Your Enrollments
+
+### Viewing Enrolled Conferences
+
+After enrolling:
+- Go to your **Profile** page (`/perfil`)
+- View all enrolled conferences in the "Mis Conferencias Inscritas" section
+- See details including day, time, and location
+- Access virtual meeting links for online conferences
+
+### Identifying Enrolled Conferences
+
+On the Agenda page, conferences you're already enrolled in show:
+- **✓ Inscrito** button instead of "Inscribirse ahora"
+- Gray button background (not clickable)
+- You cannot enroll twice in the same conference
+
+### Canceling Enrollment
+
+To cancel an enrollment:
+1. Go to your **Profile** page
+2. Find the conference in "Mis Conferencias Inscritas"
+3. Click **"Cancelar"**
+4. Confirm the cancellation
+5. The conference will be removed from your enrolled list
+6. The seat becomes available for others
+
+<Note>
+  You can re-enroll in a conference after canceling if seats are still available.
+</Note>
+
+---
+
+## Conference Capacity System
+
+### How Capacity Works
+
+- **Virtual Conferences**: 500 maximum attendees
+- **In-Person Conferences**: Varies by location (typically 150 seats)
+- Real-time seat tracking
+- First-come, first-served enrollment
+
+### Capacity Indicators
+
+The visual progress bar and background color help you quickly assess availability:
+
+- **Green background** (100-150 available): Plenty of space
+- **Yellow background** (50-100 available): Moderate availability
+- **Orange background** (1-50 available): Limited seats - enroll soon!
+- **Red background** (0 available): Conference is full
+
+<Tip>
+  Popular conferences fill up quickly! Enroll early to secure your spot.
+</Tip>
+
+### Full Conferences
+
+When a conference reaches capacity:
+- Button displays **"Cupos Agotados"** (Seats Full)
+- Button is disabled (grayed out)
+- Progress bar shows 0% availability
+- Red background in the availability section
+
+---
+
+## Virtual vs. In-Person Conferences
+
+### Virtual Conferences (🌐 Virtual)
+
+**Characteristics:**
+- Attended online via video conferencing platform
+- Higher capacity (500 seats)
+- Location shows "Plataforma Virtual"
+- Includes **"🔗 Unirse a la Reunión"** (Join Meeting) link in your profile
+
+**How to Attend:**
+1. Enroll in the conference
+2. Go to your Profile page
+3. Find the conference in "Mis Conferencias Inscritas"
+4. Click "🔗 Unirse a la Reunión" at the scheduled time
+5. Join the virtual conference platform
+
+### In-Person Conferences (📍 Presencial)
+
+**Characteristics:**
+- Attended physically at a specific location
+- Capacity varies by venue (typically 150 seats)
+- Location shows the physical room or building
+- Requires QR code scanning for attendance confirmation
+
+**How to Attend:**
+1. Enroll in the conference
+2. Note the location and time
+3. Arrive at the venue at the scheduled time
+4. Scan the QR code displayed at the event
+5. Your attendance will be recorded
+
+<Note>
+  See the [QR Attendance](/user-guide/qr-attendance) guide for detailed instructions on scanning QR codes.
+</Note>
+
+---
+
+## Conference Materials and Resources
+
+Some conferences provide additional materials:
+
+### External Links (🔗 Enlace al Material)
+- Click to access online resources
+- Opens in a new browser tab
+- May include slides, references, or supplementary content
+
+### Downloadable Documents (📁 Descargar Documento)
+- Click to download conference materials
+- Saves to your device
+- File name includes the conference title
+
+<Tip>
+  Download materials before the conference to review them in advance.
+</Tip>
+
+---
+
+## Best Practices for Enrollment
+
+### Plan Your Schedule
+- Browse all days to avoid time conflicts
+- Check conference start and end times
+- Consider travel time between in-person venues
+- Note whether conferences are virtual or in-person
+
+### Enroll Early
+- Popular conferences fill up quickly
+- Enroll as soon as registration opens
+- Monitor the availability indicators
+
+### Diversify Your Experience
+- Mix virtual and in-person conferences
+- Attend conferences across different careers and topics
+- Take advantage of general sessions open to all majors
+
+### Manage Your Commitments
+- Only enroll in conferences you plan to attend
+- Cancel enrollments if your plans change
+- Free up spots for others when you can't attend
+
+---
+
+## Troubleshooting
+
+### "No conferences found" Message
+
+**Cause**: Your current filters are too restrictive
+
+**Solution**:
+- Click **"✕ Limpiar"** to reset filters
+- Try broader search terms
+- Switch to a different day
+
+### Unable to Enroll
+
+**Possible causes and solutions**:
+
+1. **Not logged in**: Log in at `/login`
+2. **Conference is full**: Look for alternative conferences or check back for cancellations
+3. **Already enrolled**: Check your profile to confirm
+4. **Technical issue**: Refresh the page and try again
+
+### Conference Doesn't Appear in Profile
+
+**Solution**:
+- Wait a few moments and refresh your profile page
+- Verify the enrollment was successful (check for success message)
+- Ensure you're logged in with the correct account
+
+### Availability Shows Incorrect Numbers
+
+**Solution**:
+- Refresh the page to get updated seat counts
+- Check the timestamp to ensure you're seeing current data
+
+---
+
+## Language Support
+
+The Agenda interface supports both Spanish and English:
+- 🇪🇸 Spanish (Español): Default language
+- 🇺🇸 English: Available via language selector
+
+All conference titles, descriptions, and interface elements adapt to your selected language.
+
+---
+
+## Need Help?
+
+For assistance with conference enrollment:
+- **Email**: coniiti@ucatolica.edu.co
+- **Phone**: +57 (601) 327 7300
+- **In-Person**: Visit the registration desk during the event
+
+<Tip>
+  Check the Agenda page regularly - new conferences may be added, and capacity can change due to cancellations!
+</Tip>
