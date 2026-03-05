@@ -1,0 +1,160 @@
+{
+  "projectType": "saas",
+  "projectName": "CONIITI 2026",
+  "projectDescription": "Full-stack conference management platform for the International Congress of Innovation and Trends in Engineering with user registration, admin dashboard, and QR-based attendance tracking.",
+  "theme": "almond",
+  "primaryColor": "#1e3a8a",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Platform",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "introduction",
+              "features",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Getting Started",
+            "pages": [
+              "quickstart",
+              "installation",
+              "configuration"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "user-guide/registration",
+              "user-guide/profile-management",
+              "user-guide/conference-enrollment",
+              "user-guide/qr-attendance"
+            ]
+          },
+          {
+            "group": "Admin Guide",
+            "pages": [
+              "admin-guide/dashboard-overview",
+              "admin-guide/managing-speakers",
+              "admin-guide/managing-conferences",
+              "admin-guide/theme-customization",
+              "admin-guide/user-management"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/authentication/overview",
+              "api/authentication/register",
+              "api/authentication/profile"
+            ]
+          },
+          {
+            "group": "Events",
+            "pages": [
+              "api/events/list-events",
+              "api/events/create-event"
+            ]
+          },
+          {
+            "group": "Conferences",
+            "pages": [
+              "api/conferences/list-conferences",
+              "api/conferences/create-conference",
+              "api/conferences/update-conference",
+              "api/conferences/delete-conference"
+            ]
+          },
+          {
+            "group": "Speakers",
+            "pages": [
+              "api/speakers/list-speakers",
+              "api/speakers/create-speaker"
+            ]
+          },
+          {
+            "group": "Enrollment",
+            "pages": [
+              "api/enrollment/enroll",
+              "api/enrollment/my-enrollments"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Setup",
+            "pages": [
+              "development/local-setup",
+              "development/environment-variables",
+              "development/database-setup"
+            ]
+          },
+          {
+            "group": "Frontend",
+            "pages": [
+              "development/frontend/project-structure",
+              "development/frontend/routing",
+              "development/frontend/components",
+              "development/frontend/theming"
+            ]
+          },
+          {
+            "group": "Backend",
+            "pages": [
+              "development/backend/project-structure",
+              "development/backend/modules",
+              "development/backend/authentication",
+              "development/backend/supabase-integration"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "development/deployment/render-deployment",
+              "development/deployment/environment-setup"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "User registration and authentication with Supabase",
+    "Admin dashboard for managing speakers, conferences, and system settings",
+    "Conference enrollment and QR code generation for attendees",
+    "Dynamic theming system with country-based visual customization",
+    "Real-time synchronization between admin panel and public pages",
+    "Image upload for speaker profiles",
+    "Recovery system for deleted conferences",
+    "Performance monitoring and resource tracking"
+  ],
+  "publicApiSurface": [
+    "POST /api/usuarios/register - User registration",
+    "GET /api/usuarios/perfil - Get user profile",
+    "POST /api/usuarios/perfil - Create user profile",
+    "PUT /api/usuarios/perfil - Update user profile",
+    "GET /api/eventos - List all events",
+    "POST /api/eventos - Create new event",
+    "GET /api/ponencias - List all conferences",
+    "POST /api/ponencias - Create new conference",
+    "PUT /api/ponencias/:id - Update conference",
+    "DELETE /api/ponencias/:id - Delete conference",
+    "GET /api/ponentes - List all speakers",
+    "POST /api/ponentes - Create new speaker",
+    "POST /api/inscripciones - Enroll in conference",
+    "GET /api/inscripciones/mis-inscripciones - Get user enrollments"
+  ]
+}
