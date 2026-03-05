@@ -68,7 +68,8 @@
             "pages": [
               "api/authentication/overview",
               "api/authentication/register",
-              "api/authentication/profile"
+              "api/authentication/profile",
+              "api/authentication/list-users"
             ]
           },
           {

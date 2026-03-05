@@ -1,0 +1,202 @@
+---
+title: "List Users"
+api: "GET /api/usuarios"
+description: "Retrieve a list of all registered users in the CONIITI 2026 platform"
+---
+
+## Endpoint
+
+```
+GET /api/usuarios
+```
+
+## Authentication
+
+This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+<Warning>
+  This is an admin endpoint. Only authenticated users with valid permissions should access this endpoint.
+</Warning>
+
+## Response
+
+Returns an array of user profile objects, ordered by creation date (most recent first).
+
+<ResponseField name="users" type="array">
+  Array of user profile objects
+  
+  <Expandable title="User Profile Object">
+    <ResponseField name="id" type="string">
+      Unique identifier for the user (UUID from Supabase Auth)
+    </ResponseField>
+    
+    <ResponseField name="nombre_completo" type="string">
+      Full name of the user
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      User's email address
+    </ResponseField>
+    
+    <ResponseField name="rol" type="string">
+      User role - `ESTUDIANTE` (Student), `USER` (Default), or admin roles
+    </ResponseField>
+    
+    <ResponseField name="carrera" type="string">
+      User's academic program or career (optional)
+    </ResponseField>
+    
+    <ResponseField name="genero" type="string">
+      User's gender (optional)
+    </ResponseField>
+    
+    <ResponseField name="documento" type="string">
+      User's document/ID number (optional)
+    </ResponseField>
+    
+    <ResponseField name="codigo_institucional" type="string">
+      Institutional code for students (optional, only for ESTUDIANTE role)
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Timestamp of when the user profile was created
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="string">
+      Timestamp of the last profile update
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://your-api-url.com/api/usuarios \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-api-url.com/api/usuarios', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
+
+const users = await response.json();
+console.log(users);
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+}
+
+response = requests.get(
+    'https://your-api-url.com/api/usuarios',
+    headers=headers
+)
+
+users = response.json()
+print(users)
+```
+</CodeGroup>
+
+## Example Response
+
+```json
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "nombre_completo": "María García López",
+    "email": "maria.garcia@ucatolica.edu.co",
+    "rol": "ESTUDIANTE",
+    "carrera": "Ingeniería de Sistemas",
+    "genero": "Femenino",
+    "documento": "1023456789",
+    "codigo_institucional": "2020123456",
+    "created_at": "2024-03-05T10:30:00Z",
+    "updated_at": "2024-03-05T10:30:00Z"
+  },
+  {
+    "id": "987e6543-e21b-98d7-a654-789456123000",
+    "nombre_completo": "Carlos Ramírez",
+    "email": "carlos.ramirez@example.com",
+    "rol": "USER",
+    "carrera": "Ingeniería Industrial",
+    "genero": "Masculino",
+    "documento": "1034567890",
+    "codigo_institucional": null,
+    "created_at": "2024-03-04T15:20:00Z",
+    "updated_at": "2024-03-05T09:15:00Z"
+  }
+]
+```
+
+## Status Codes
+
+<ResponseField name="200" type="Success">
+  Successfully retrieved the list of users
+</ResponseField>
+
+<ResponseField name="400" type="Error">
+  Bad request - Database error occurred
+  
+  ```json
+  {
+    "error": "Database query failed"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="Error">
+  Unauthorized - Invalid or missing authentication token
+  
+  ```json
+  {
+    "error": "No se proporcionó token de autorización"
+  }
+  ```
+</ResponseField>
+
+## Notes
+
+<Note>
+  This endpoint returns all users ordered by `created_at` in descending order (most recent first).
+</Note>
+
+<Info>
+  The endpoint uses the `admin_supabase` client on the backend to bypass Row Level Security policies and retrieve all user profiles.
+</Info>
+
+## Implementation Details
+
+The endpoint is implemented in the usuario controller:
+
+```typescript
+export const obtenerUsuarios = async (req: any, res: any) => {
+  try {
+    const { data, error } = await admin_supabase
+      .from('perfil_usuario')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    res.json(data)
+  } catch (err: any) {
+    res.status(400).json({ error: err.message })
+  }
+}
+```
+
+## See Also
+
+- [Get User Profile](/api/authentication/profile) - Retrieve the authenticated user's own profile
+- [User Management](/admin-guide/user-management) - Admin guide for managing users
